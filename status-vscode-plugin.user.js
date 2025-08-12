@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.0.2
-// @description  Ouvre le projet dans VS Code ou gitlab
+// @version      1.0.3
+// @description  Ouvre un projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
 // @icon         https://code.visualstudio.com/favicon.ico
@@ -16,7 +16,6 @@
 (function () {
   "use strict";
 
-  // —— Config —— //
   const HOST_ALIASES = [
     "eddy.wp.rc.dev",
     "maxime.wp.rc.dev",
@@ -25,108 +24,144 @@
     "marion.wp.rc.dev",
     "sebastien.wp.rc.dev",
   ];
+  const BRANCHES = ["master", "develop"];
   const STORAGE_KEY = "vscode_global_host_alias";
+  const STORAGE_BRANCH_KEY = "gitlab_branch";
 
   const getCurrentHost = () =>
     localStorage.getItem(STORAGE_KEY) || HOST_ALIASES[0];
-
   const setCurrentHost = (host) => {
     localStorage.setItem(STORAGE_KEY, host);
     document.documentElement.setAttribute("data-vscode-host", host);
   };
 
-  // —— Styles (injectés 1x) —— //
+  const getCurrentBranch = () =>
+    localStorage.getItem(STORAGE_BRANCH_KEY) || BRANCHES[0];
+  const setCurrentBranch = (branch) => {
+    localStorage.setItem(STORAGE_BRANCH_KEY, branch);
+    document.documentElement.setAttribute("data-gitlab-branch", branch);
+  };
+
   function ensureStyles() {
     if (document.getElementById("vscode-userscript-style")) return;
     const style = document.createElement("style");
     style.id = "vscode-userscript-style";
     style.textContent = `
-      /* Hover sur l'icône des boutons carte */
       [data-vscode-ui] button .vscode-icon {
         transition: transform .15s ease, filter .2s ease;
         will-change: transform;
         transform-origin: center;
       }
       [data-vscode-ui] button:hover .vscode-icon {
-        transform: scale(1.18) ;
+        transform: scale(1.18);
         filter: drop-shadow(0 1px 2px rgba(0,0,0,.25));
       }
       [data-vscode-ui] button:active .vscode-icon {
         transform: scale(0.96);
       }
-      .core {
-      min-width: initial !important;
+      .core { min-width: initial !important; }
+      #vscode-global-host {
+        position: fixed; top: 10px; right: 10px; z-index: 9999;
+        display: flex; flex-direction: column; gap: 6px;
+        padding: 6px 8px; border-radius: 8px;
+        border: 1px solid rgba(0,0,0,0.08);
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      }
+      #vscode-global-host .row {
+        display: flex; align-items: center; gap: 8px;
+      }
+      #vscode-global-host label {
+        font-size: 12px; color: #333; white-space: nowrap;
+      }
+      #vscode-global-host select {
+        font-size: 12px; padding: 4px 6px;
+        border: 1px solid #ddd; border-radius: 6px;
       }
     `;
     document.head.appendChild(style);
   }
 
-  //  Sélecteur global
   function ensureGlobalSelector() {
     if (document.querySelector("#vscode-global-host")) return;
 
     const wrap = document.createElement("div");
     wrap.id = "vscode-global-host";
-    wrap.style.position = "fixed";
-    wrap.style.top = "10px";
-    wrap.style.right = "10px";
-    wrap.style.zIndex = "9999";
-    wrap.style.display = "flex";
-    wrap.style.alignItems = "center";
-    wrap.style.gap = "8px";
-    wrap.style.padding = "6px 8px";
-    wrap.style.borderRadius = "8px";
-    wrap.style.border = "1px solid rgba(0,0,0,0.08)";
-    wrap.style.background = "rgba(255,255,255,0.9)";
-    wrap.style.backdropFilter = "blur(4px)";
-    wrap.style.boxShadow = "0 2px 12px rgba(0,0,0,0.08)";
 
-    const label = document.createElement("span");
-    label.textContent = "Host :";
-    label.style.fontSize = "12px";
-    label.style.color = "#333";
+    // —— Host row —— //
+    const rowHost = document.createElement("div");
+    rowHost.className = "row";
 
-    const select = document.createElement("select");
-    select.id = "vscode-host-select";
-    select.style.fontSize = "12px";
-    select.style.padding = "4px 6px";
-    select.style.border = "1px solid #ddd";
-    select.style.borderRadius = "6px";
+    const iconVS = document.createElement("img");
+    iconVS.src = "https://code.visualstudio.com/favicon.ico";
+    iconVS.alt = "VS Code";
+    iconVS.width = 16;
+    iconVS.height = 16;
+    iconVS.style.opacity = "0.9";
 
-    const current = getCurrentHost();
+    const labelHost = document.createElement("label");
+    labelHost.textContent = "Host :";
+
+    const selectHost = document.createElement("select");
+    const currentHost = getCurrentHost();
     HOST_ALIASES.forEach((host) => {
       const opt = document.createElement("option");
       opt.value = host;
       opt.textContent = host;
-      if (host === current) opt.selected = true;
-      select.appendChild(opt);
+      if (host === currentHost) opt.selected = true;
+      selectHost.appendChild(opt);
     });
+    selectHost.addEventListener("change", () =>
+      setCurrentHost(selectHost.value)
+    );
 
-    // const coreContainer = document.querySelector(".core ");
-    // coreContainer.style.minWidth = "initial";
+    rowHost.appendChild(iconVS);
+    rowHost.appendChild(labelHost);
+    rowHost.appendChild(selectHost);
 
-    select.addEventListener("change", () => setCurrentHost(select.value));
+    // —— Branch row —— //
+    const rowBranch = document.createElement("div");
+    rowBranch.className = "row";
 
-    const icon = document.createElement("img");
-    icon.src = "https://code.visualstudio.com/favicon.ico";
-    icon.alt = "VS Code";
-    icon.width = 16;
-    icon.height = 16;
-    icon.style.opacity = "0.9";
+    const iconGL = document.createElement("img");
+    iconGL.src = "https://i.imgur.com/BcoMk3p.png";
+    iconGL.alt = "GitLab";
+    iconGL.width = 16;
+    iconGL.height = 16;
+    iconGL.style.opacity = "0.9";
 
-    wrap.appendChild(icon);
-    wrap.appendChild(label);
-    wrap.appendChild(select);
+    const labelBranch = document.createElement("label");
+    labelBranch.textContent = "Branch :";
+
+    const selectBranch = document.createElement("select");
+    const currentBranch = getCurrentBranch();
+    BRANCHES.forEach((b) => {
+      const opt = document.createElement("option");
+      opt.value = b;
+      opt.textContent = b;
+      if (b === currentBranch) opt.selected = true;
+      selectBranch.appendChild(opt);
+    });
+    selectBranch.addEventListener("change", () =>
+      setCurrentBranch(selectBranch.value)
+    );
+
+    rowBranch.appendChild(iconGL);
+    rowBranch.appendChild(labelBranch);
+    rowBranch.appendChild(selectBranch);
+
+    wrap.appendChild(rowHost);
+    wrap.appendChild(rowBranch);
     document.body.appendChild(wrap);
 
-    setCurrentHost(current);
+    setCurrentHost(currentHost);
+    setCurrentBranch(currentBranch);
   }
 
   function enhanceCard(cardEl) {
     if (!cardEl || cardEl.querySelector("[data-vscode-ui]")) return;
-
-    const siteKeyEl = cardEl.querySelector(".site_key a");
-    const siteKey = siteKeyEl?.textContent?.trim() || "";
+    const siteKey = cardEl.querySelector(".site_key a")?.textContent?.trim();
     if (!siteKey) return;
 
     if (getComputedStyle(cardEl).position === "static") {
@@ -139,67 +174,62 @@
     bar.style.alignItems = "center";
     bar.style.gap = "8px";
     bar.style.marginTop = "2px";
-    bar.style.width = "100%";
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.style.display = "inline-flex";
-    btn.style.alignItems = "center";
-    btn.style.border = "none";
-    btn.style.gap = "6px";
-    btn.style.color = "#fff";
-    btn.style.background = "transparent";
-    btn.style.fontWeight = "600";
-    btn.style.borderRadius = "6px";
-    btn.style.padding = "6px 0";
-    btn.style.cursor = "pointer";
-    btn.title = `Ouvrir ${siteKey} dans VS Code`;
-    btn.setAttribute("aria-label", `Ouvrir ${siteKey} dans VS Code`);
+    const btnVS = document.createElement("button");
+    btnVS.type = "button";
+    btnVS.style.cssText = baseBtnStyle();
+    btnVS.title = `Ouvrir ${siteKey} dans VS Code`;
 
-    const icon = document.createElement("img");
-    icon.src = "https://code.visualstudio.com/favicon.ico";
-    icon.alt = "VS Code";
-    icon.width = 16;
-    icon.height = 16;
-    icon.className = "vscode-icon";
+    const iconVS = document.createElement("img");
+    iconVS.src = "https://code.visualstudio.com/favicon.ico";
+    iconVS.width = 16;
+    iconVS.height = 16;
+    iconVS.className = "vscode-icon";
+    btnVS.appendChild(iconVS);
 
-    // ——— Bouton GitLab (à droite) ———
-    const gitlabBtn = document.createElement("button");
-    gitlabBtn.type = "button";
-    // reprend exactement le style du bouton VS Code
-    gitlabBtn.style.cssText = btn.style.cssText;
-    gitlabBtn.title = `Ouvrir ${siteKey} sur GitLab`;
-    gitlabBtn.setAttribute("aria-label", `Ouvrir ${siteKey} sur GitLab`);
-
-    const gitlabIcon = document.createElement("img");
-    gitlabIcon.src = "https://i.imgur.com/BcoMk3p.png";
-    gitlabIcon.alt = "GitLab";
-    gitlabIcon.width = 16;
-    gitlabIcon.height = 16;
-    // on réutilise la classe pour l'effet hover existant
-    gitlabIcon.className = "vscode-icon";
-    gitlabBtn.appendChild(gitlabIcon);
-
-    gitlabBtn.addEventListener("click", () => {
-      const url = `http://gitlab.rc.prod/wordpress-sites/${encodeURIComponent(
-        siteKey
-      )}/tree/master`;
-      window.open(url, "_blank", "noopener,noreferrer");
-    });
-
-    btn.appendChild(icon);
-
-    btn.addEventListener("click", () => {
+    btnVS.addEventListener("click", () => {
       const hostAlias = getCurrentHost();
       const absPath = `/home/admin/www/themes/${siteKey}/current`;
-      const rawUrl = `vscode://vscode-remote/ssh-remote+${hostAlias}${absPath}`;
-      const vscodeUrl = encodeURI(rawUrl);
-      window.location.href = vscodeUrl;
+      window.location.href = encodeURI(
+        `vscode://vscode-remote/ssh-remote+${hostAlias}${absPath}`
+      );
     });
 
-    bar.appendChild(btn);
-    bar.appendChild(gitlabBtn);
+    const btnGL = document.createElement("button");
+    btnGL.type = "button";
+    btnGL.style.cssText = baseBtnStyle();
+    btnGL.title = `Ouvrir ${siteKey} sur GitLab`;
+
+    const iconGL = document.createElement("img");
+    iconGL.src = "https://i.imgur.com/BcoMk3p.png";
+    iconGL.width = 16;
+    iconGL.height = 16;
+    iconGL.className = "vscode-icon";
+    btnGL.appendChild(iconGL);
+
+    btnGL.addEventListener("click", () => {
+      const branch =
+        document.getElementById("gitlab-branch-select")?.value ||
+        getCurrentBranch();
+      window.open(
+        `http://gitlab.rc.prod/wordpress-sites/${encodeURIComponent(
+          siteKey
+        )}/tree/${branch}`,
+        "_blank"
+      );
+    });
+
+    bar.appendChild(btnVS);
+    bar.appendChild(btnGL);
     cardEl.appendChild(bar);
+  }
+
+  function baseBtnStyle() {
+    return `
+      display:inline-flex;align-items:center;border:none;gap:6px;color:#fff;
+      background:transparent;font-weight:600;border-radius:6px;padding:6px 0;
+      cursor:pointer;
+    `;
   }
 
   function enhanceAllCards() {
@@ -207,22 +237,17 @@
   }
 
   function observeCards() {
-    const observer = new MutationObserver((mutations) => {
-      for (const m of mutations) {
-        m.addedNodes.forEach((node) => {
-          if (!(node instanceof Element)) return;
-          if (node.matches?.(".card")) {
-            enhanceCard(node);
-          } else {
-            node.querySelectorAll?.(".card").forEach(enhanceCard);
-          }
+    new MutationObserver((muts) => {
+      muts.forEach((m) => {
+        m.addedNodes.forEach((n) => {
+          if (!(n instanceof Element)) return;
+          if (n.matches(".card")) enhanceCard(n);
+          else n.querySelectorAll?.(".card").forEach(enhanceCard);
         });
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
   }
 
-  // Init
   ensureStyles();
   ensureGlobalSelector();
   enhanceAllCards();
