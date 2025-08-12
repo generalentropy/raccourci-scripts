@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         VSCODE projects shortcuts
+// @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      2025-08-12
-// @description  Ouvre le projet dans VS Code
+// @version      v1.0.1
+// @description  Ouvre le projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
 // @icon         https://code.visualstudio.com/favicon.ico
@@ -100,6 +100,9 @@
       select.appendChild(opt);
     });
 
+    const coreContainer = document.querySelector(".core ");
+    coreContainer.style.minWidth = "initial";
+
     select.addEventListener("change", () => setCurrentHost(select.value));
 
     const icon = document.createElement("img");
@@ -146,7 +149,7 @@
     btn.style.background = "transparent";
     btn.style.fontWeight = "600";
     btn.style.borderRadius = "6px";
-    btn.style.padding = "6px 10px";
+    btn.style.padding = "6px 0";
     btn.style.cursor = "pointer";
     btn.title = `Ouvrir ${siteKey} dans VS Code`;
     btn.setAttribute("aria-label", `Ouvrir ${siteKey} dans VS Code`);
@@ -157,6 +160,30 @@
     icon.width = 16;
     icon.height = 16;
     icon.className = "vscode-icon";
+
+    // ——— Bouton GitLab (à droite) ———
+    const gitlabBtn = document.createElement("button");
+    gitlabBtn.type = "button";
+    // reprend exactement le style du bouton VS Code
+    gitlabBtn.style.cssText = btn.style.cssText;
+    gitlabBtn.title = `Ouvrir ${siteKey} sur GitLab`;
+    gitlabBtn.setAttribute("aria-label", `Ouvrir ${siteKey} sur GitLab`);
+
+    const gitlabIcon = document.createElement("img");
+    gitlabIcon.src = "https://i.imgur.com/BcoMk3p.png";
+    gitlabIcon.alt = "GitLab";
+    gitlabIcon.width = 16;
+    gitlabIcon.height = 16;
+    // on réutilise la classe pour l'effet hover existant
+    gitlabIcon.className = "vscode-icon";
+    gitlabBtn.appendChild(gitlabIcon);
+
+    gitlabBtn.addEventListener("click", () => {
+      const url = `http://gitlab.rc.prod/wordpress-sites/${encodeURIComponent(
+        siteKey
+      )}/tree/master`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    });
 
     btn.appendChild(icon);
 
@@ -169,6 +196,7 @@
     });
 
     bar.appendChild(btn);
+    bar.appendChild(gitlabBtn);
     cardEl.appendChild(bar);
   }
 
