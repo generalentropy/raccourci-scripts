@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.0.1
+// @version      1.0.2
 // @description  Ouvre le projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -54,7 +54,9 @@
       [data-vscode-ui] button:active .vscode-icon {
         transform: scale(0.96);
       }
-
+      .core {
+      min-width: initial !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -100,8 +102,8 @@
       select.appendChild(opt);
     });
 
-    const coreContainer = document.querySelector(".core ");
-    coreContainer.style.minWidth = "initial";
+    // const coreContainer = document.querySelector(".core ");
+    // coreContainer.style.minWidth = "initial";
 
     select.addEventListener("change", () => setCurrentHost(select.value));
 
