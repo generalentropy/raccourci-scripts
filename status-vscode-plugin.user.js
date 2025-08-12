@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.0.3
+// @version      1.0.4
 // @description  Ouvre un projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -59,7 +59,7 @@
       [data-vscode-ui] button:active .vscode-icon {
         transform: scale(0.96);
       }
-      .core { min-width: initial !important; }
+      .core { min-width: 370px !important; }
       #vscode-global-host {
         position: fixed; top: 10px; right: 10px; z-index: 9999;
         display: flex; flex-direction: column; gap: 6px;
