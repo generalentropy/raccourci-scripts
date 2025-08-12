@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         Ferme la modal d'erreur de l'ERP
 // @namespace    http://tampermonkey.net/
-// @version      2025-08-01
-// @description  Ferme automatiquement la modale d’erreur 'null' de l'ERP
+// @version      2025-08-12
+// @description  Ferme automatiquement la modale d’erreur de l'ERP
 // @author       Eddy
 // @match        https://erpv8.raccourci.fr/*
 // @run-at       document-idle
 // @grant        none
 // @homepageURL  https://github.com/generalentropy/tampermonkey-erp-patch
-// @updateURL    https://raw.githubusercontent.com/generalentropy/tampermonkey-erp-patch/main/erp-patch.user.js
-// @downloadURL  https://raw.githubusercontent.com/generalentropy/tampermonkey-erp-patch/main/erp-patch.user.js
+// @updateURL    https://raw.githubusercontent.com/generalentropy/raccourci-scripts/main/erp-patch.user.js
+// @downloadURL  https://raw.githubusercontent.com/generalentropy/raccourci-scripts/main/main/erp-patch.user.js
 // ==/UserScript==
 
 (function () {

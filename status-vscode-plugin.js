@@ -8,8 +8,8 @@
 // @icon         https://code.visualstudio.com/favicon.ico
 // @grant        none
 // @homepageURL  https://github.com/generalentropy/raccourci-scripts
-// @updateURL    https://raw.githubusercontent.com/generalentropy/tampermonkey-erp-patch/main/erp-patch.user.js
-// @downloadURL  https://raw.githubusercontent.com/generalentropy/tampermonkey-erp-patch/main/erp-patch.user.js
+// @updateURL    https://raw.githubusercontent.com/generalentropy/raccourci-scripts/main/status-vscode-plugin.js
+// @downloadURL  https://raw.githubusercontent.com/generalentropy/raccourci-scripts/main/status-vscode-plugin.js
 // @run-at       document-idle
 // ==/UserScript==
 
