@@ -7,9 +7,9 @@
 // @match        https://erpv8.raccourci.fr/*
 // @run-at       document-idle
 // @grant        none
-// @homepageURL  https://github.com/generalentropy/tampermonkey-erp-patch
+// @homepageURL  https://github.com/generalentropy/raccourci-scripts
 // @updateURL    https://raw.githubusercontent.com/generalentropy/raccourci-scripts/main/erp-patch.user.js
-// @downloadURL  https://raw.githubusercontent.com/generalentropy/raccourci-scripts/main/main/erp-patch.user.js
+// @downloadURL  https://raw.githubusercontent.com/generalentropy/raccourci-scripts/main/erp-patch.user.js
 // ==/UserScript==
 
 (function () {
