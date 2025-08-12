@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      v1.0.1
+// @version      1.0.1
 // @description  Ouvre le projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
