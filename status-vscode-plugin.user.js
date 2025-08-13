@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.1.6
+// @version      1.1.7
 // @description  Ouvre un projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -175,7 +175,7 @@
     <div class="row">
       <label title="Quand activé, #${HOST_ID} passe en flex-direction: row">
         <input type="checkbox" id="rc-row-toggle">
-        Orientation en ligne (row)
+        Orientation en ligne
       </label>
     </div>
     <div class="row" style="margin-top:6px;">
