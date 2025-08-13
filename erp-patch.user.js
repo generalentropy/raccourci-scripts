@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Ferme la modal d'erreur de l'ERP
 // @namespace    http://tampermonkey.net/
-// @version      1.0.1
+// @version      1.0.2
 // @description  Ferme automatiquement la modale d’erreur de l'ERP
 // @author       Eddy Nicolle
 // @match        https://erpv8.raccourci.fr/*
