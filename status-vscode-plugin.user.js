@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.0.5
+// @version      1.0.6
 // @description  Ouvre un projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -29,7 +29,7 @@
   const STORAGE_BRANCH_KEY = "gitlab_branch";
 
   const SITEKEY_UPDATE = [{ initial: "", updated: "" }];
-  const GITLAB_V2 = ["marseille-tourisme", "ot-verbier"];
+  const GITLAB_V2 = ["marseille-tourisme", "ot-verbier", "broceliande"];
 
   const getCurrentHost = () =>
     localStorage.getItem(STORAGE_KEY) || HOST_ALIASES[0];
