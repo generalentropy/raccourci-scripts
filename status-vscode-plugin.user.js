@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.0.6
+// @version      1.1.6
 // @description  Ouvre un projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -86,6 +86,184 @@
     document.head.appendChild(style);
   }
 
+  function ensureSettings() {
+    if (window.__rcSettingsInited) return;
+    window.__rcSettingsInited = true;
+
+    const HOST_ID = "vscode-global-host";
+    const STORAGE_KEY_ROW = "rc_settings_row_mode";
+    const STORAGE_KEY_OPACITY = "rc_settings_icon_opacity_pct"; // 0..100
+
+    // ——— Styles ———
+    const style = document.createElement("style");
+    style.textContent = `
+    :root { --rc-accent: rgb(247, 109, 143); }
+    .vscode-icon { opacity: var(--rc-icon-opacity, 1); transition: opacity .15s ease; }
+
+    #rc-settings-btn {
+      position: fixed; right: 16px; bottom: 16px; z-index: 99999;
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px; border-radius: 50%; cursor: pointer; user-select: none;
+      background: rgba(30,30,30,0.9); color: #fff;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(6px); box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+    #rc-settings-btn:hover { background: rgba(45,45,45,0.95); }
+    #rc-settings-btn svg { width: 20px; height: 20px; display:block; }
+
+    #rc-settings-panel {
+      position: fixed; right: 16px; bottom: 70px; z-index: 99999;
+      min-width: 260px; padding: 12px; border-radius: 12px;
+      background: rgba(20,20,20,0.95); color: #f5f5f5;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(6px); box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      font: 13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      display: none;
+    }
+    #rc-settings-panel .row { display:flex; align-items:center; gap:8px; }
+    #rc-settings-panel label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+
+
+    #rc-row-toggle { accent-color: var(--rc-accent); transform: scale(1.1); }
+    #rc-hide-host { accent-color: var(--rc-accent); transform: scale(1.1); }
+
+    #rc-icon-opacity { width: 100%; accent-color: var(--rc-accent); background: transparent;  cursor: pointer; }
+    /* WebKit */
+    #rc-icon-opacity::-webkit-slider-runnable-track {
+      height: 4px; border-radius: 999px; background: rgba(255,255,255,0.2);
+    }
+    #rc-icon-opacity::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--rc-accent);
+      margin-top: -6px; border: none; box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
+    }
+    /* Firefox */
+    #rc-icon-opacity::-moz-range-track {
+      height: 4px; border-radius: 999px; background: rgba(255,255,255,0.2);
+    }
+    #rc-icon-opacity::-moz-range-thumb {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--rc-accent); border: none;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
+
+    }
+}
+  `;
+    document.head.appendChild(style);
+
+    // ——— UI ———
+    const btn = document.createElement("button");
+    btn.id = "rc-settings-btn";
+    btn.title = "Ouvrir le panneau de réglage";
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Ouvrir les réglages");
+    // SVG Lucide fourni (centré)
+    btn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round"
+         class="lucide lucide-settings-icon lucide-settings">
+      <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  `;
+
+    const panel = document.createElement("div");
+    panel.id = "rc-settings-panel";
+    panel.innerHTML = `
+    <div class="row">
+      <label title="Quand activé, #${HOST_ID} passe en flex-direction: row">
+        <input type="checkbox" id="rc-row-toggle">
+        Orientation en ligne (row)
+      </label>
+    </div>
+    <div class="row" style="margin-top:6px;">
+  <label>
+    <input type="checkbox" id="rc-hide-host">
+    Masquer le panneau des sélecteurs
+  </label>
+</div>
+    <div style="margin-top:10px;">
+      <div class="row" style="justify-content:space-between;">
+        <label for="rc-icon-opacity" style="margin-bottom:4px;">Opacité des icônes</label>
+        <span id="rc-icon-opacity-value">100%</span>
+      </div>
+      <input type="range" id="rc-icon-opacity" min="0" max="100" step="1">
+    </div>
+  `;
+
+    document.body.appendChild(btn);
+    document.body.appendChild(panel);
+
+    const toggleRow = panel.querySelector("#rc-row-toggle");
+    const toggleHideHost = panel.querySelector("#rc-hide-host");
+    const slider = panel.querySelector("#rc-icon-opacity");
+    const sliderValue = panel.querySelector("#rc-icon-opacity-value");
+
+    // ——— Helpers ———
+    const getHost = () => document.getElementById(HOST_ID);
+    const applyRowMode = (enabled) => {
+      const host = getHost();
+      if (host) host.style.flexDirection = enabled ? "row" : "";
+    };
+    const applyIconOpacityPct = (pct) => {
+      const clamped = Math.max(0, Math.min(100, pct)); // 0..100
+      document.documentElement.style.setProperty(
+        "--rc-icon-opacity",
+        String(clamped / 100)
+      );
+      sliderValue.textContent = `${clamped}%`;
+    };
+    const STORAGE_KEY_HIDE = "rc_settings_hide_host";
+    const applyHideHost = (hidden) => {
+      const host = getHost();
+      if (host) host.style.display = hidden ? "none" : "";
+    };
+
+    // ——— Init ———
+    const savedRow = localStorage.getItem(STORAGE_KEY_ROW) === "true";
+    toggleRow.checked = savedRow;
+    applyRowMode(savedRow);
+
+    const savedPct = parseInt(
+      localStorage.getItem(STORAGE_KEY_OPACITY) ?? "100",
+      10
+    );
+    const initialPct = Number.isFinite(savedPct)
+      ? Math.max(0, Math.min(100, savedPct))
+      : 100;
+    slider.value = String(initialPct);
+    applyIconOpacityPct(initialPct);
+
+    const savedHide = localStorage.getItem(STORAGE_KEY_HIDE) === "true";
+    toggleHideHost.checked = savedHide;
+    applyHideHost(savedHide);
+
+    // ——— Listeners ———
+    toggleRow.addEventListener("change", () => {
+      const enabled = toggleRow.checked;
+      localStorage.setItem(STORAGE_KEY_ROW, String(enabled));
+      applyRowMode(enabled);
+    });
+
+    slider.addEventListener("input", () => {
+      const pct = parseInt(slider.value, 10);
+      localStorage.setItem(STORAGE_KEY_OPACITY, String(pct));
+      applyIconOpacityPct(pct);
+    });
+
+    btn.addEventListener("click", () => {
+      panel.style.display = panel.style.display === "block" ? "none" : "block";
+    });
+
+    toggleHideHost.addEventListener("change", () => {
+      const hidden = toggleHideHost.checked;
+      localStorage.setItem(STORAGE_KEY_HIDE, String(hidden));
+      applyHideHost(hidden);
+    });
+  }
+
   function ensureGlobalSelector() {
     if (document.querySelector("#vscode-global-host")) return;
 
@@ -161,7 +339,6 @@
     setCurrentHost(currentHost);
     setCurrentBranch(currentBranch);
   }
-  //https://git.rc-prod.com/raccourci/woody-wordpress/themes/marseille-tourisme/-/tree/master
 
   function buildGitlabUrl(siteKey, branch) {
     const encoded = encodeURIComponent(siteKey);
@@ -175,7 +352,7 @@
     const rawSiteKey = cardEl.querySelector(".site_key a")?.textContent?.trim();
     if (!rawSiteKey) return;
 
-    // check et remplace si le sitekey est différent
+    // => check et remplace si le sitekey est différent
     const match = SITEKEY_UPDATE.find((stk) => stk.initial === rawSiteKey);
     const siteKey = match ? match.updated : rawSiteKey;
 
@@ -247,20 +424,22 @@
     document.querySelectorAll(".card").forEach(enhanceCard);
   }
 
-  function observeCards() {
-    new MutationObserver((muts) => {
-      muts.forEach((m) => {
-        m.addedNodes.forEach((n) => {
-          if (!(n instanceof Element)) return;
-          if (n.matches(".card")) enhanceCard(n);
-          else n.querySelectorAll?.(".card").forEach(enhanceCard);
-        });
-      });
-    }).observe(document.body, { childList: true, subtree: true });
-  }
+  //  => pour un futur ajout de fonction de recherche
+  // function observeCards() {
+  //   new MutationObserver((muts) => {
+  //     muts.forEach((m) => {
+  //       m.addedNodes.forEach((n) => {
+  //         if (!(n instanceof Element)) return;
+  //         if (n.matches(".card")) enhanceCard(n);
+  //         else n.querySelectorAll?.(".card").forEach(enhanceCard);
+  //       });
+  //     });
+  //   }).observe(document.body, { childList: true, subtree: true });
+  // }
 
   ensureStyles();
   ensureGlobalSelector();
   enhanceAllCards();
-  observeCards();
+  ensureSettings();
+  // observeCards();
 })();
