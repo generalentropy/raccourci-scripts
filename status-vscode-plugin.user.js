@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.0.4
+// @version      1.0.5
 // @description  Ouvre un projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -27,6 +27,9 @@
   const BRANCHES = ["master", "develop"];
   const STORAGE_KEY = "vscode_global_host_alias";
   const STORAGE_BRANCH_KEY = "gitlab_branch";
+
+  const SITEKEY_UPDATE = [{ initial: "", updated: "" }];
+  const GITLAB_V2 = ["marseille-tourisme", "ot-verbier"];
 
   const getCurrentHost = () =>
     localStorage.getItem(STORAGE_KEY) || HOST_ALIASES[0];
@@ -158,11 +161,23 @@
     setCurrentHost(currentHost);
     setCurrentBranch(currentBranch);
   }
+  //https://git.rc-prod.com/raccourci/woody-wordpress/themes/marseille-tourisme/-/tree/master
+
+  function buildGitlabUrl(siteKey, branch) {
+    const encoded = encodeURIComponent(siteKey);
+    return GITLAB_V2.includes(siteKey)
+      ? `https://git.rc-prod.com/raccourci/woody-wordpress/themes/${encoded}/-/tree/${branch}`
+      : `http://gitlab.rc.prod/wordpress-sites/${encoded}/tree/${branch}`;
+  }
 
   function enhanceCard(cardEl) {
     if (!cardEl || cardEl.querySelector("[data-vscode-ui]")) return;
-    const siteKey = cardEl.querySelector(".site_key a")?.textContent?.trim();
-    if (!siteKey) return;
+    const rawSiteKey = cardEl.querySelector(".site_key a")?.textContent?.trim();
+    if (!rawSiteKey) return;
+
+    // check et remplace si le sitekey est différent
+    const match = SITEKEY_UPDATE.find((stk) => stk.initial === rawSiteKey);
+    const siteKey = match ? match.updated : rawSiteKey;
 
     if (getComputedStyle(cardEl).position === "static") {
       cardEl.style.position = "relative";
@@ -211,12 +226,8 @@
       const branch =
         document.getElementById("gitlab-branch-select")?.value ||
         getCurrentBranch();
-      window.open(
-        `http://gitlab.rc.prod/wordpress-sites/${encodeURIComponent(
-          siteKey
-        )}/tree/${branch}`,
-        "_blank"
-      );
+
+      window.open(buildGitlabUrl(siteKey, branch), "_blank");
     });
 
     bar.appendChild(btnVS);
