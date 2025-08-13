@@ -5,6 +5,7 @@
 // @description  Ferme automatiquement la modale d’erreur de l'ERP
 // @author       Eddy Nicolle
 // @match        https://erpv8.raccourci.fr/*
+// @icon         https://erpv8.raccourci.fr/raccourci_theme/static/src/img/favicon.ico
 // @run-at       document-idle
 // @grant        none
 // @homepageURL  https://github.com/generalentropy/raccourci-scripts
