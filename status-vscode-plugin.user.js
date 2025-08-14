@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.2.1
+// @version      1.2.2
 // @description  Ouvre un projet dans VS Code ou gitlab + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -330,6 +330,10 @@ hr {
   border-top: 1px dashed var(--rc-accent);
   opacity: 0.5;
   margin: 2px 0 10px 0;
+}
+
+td {
+    padding: 0;
 }
 
 `;
