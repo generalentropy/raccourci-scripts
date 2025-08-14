@@ -50,7 +50,16 @@
     const style = document.createElement("style");
     style.id = "vscode-userscript-style";
     style.textContent = `
-/* --- Styles globaux VSCode/GitLab bar --- */
+/* --- Styles globaux --- */
+
+:root {
+  --rc-accent: rgb(247, 109, 143);
+  --rc-icon-opacity: 1;
+  --rc-gap: 8px;
+  --rc-btn-padding: 6px 0;
+  --rc-btn-radius: 6px;
+}
+
 [data-vscode-ui] button .vscode-icon {
   transition: transform 0.15s ease, filter 0.2s ease;
   will-change: transform;
@@ -77,7 +86,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--rc-btn-radius);
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(4px);
@@ -86,7 +95,7 @@
 #vscode-global-host .row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--rc-gap);
 }
 #vscode-global-host label {
   font-size: 12px;
@@ -97,7 +106,7 @@
   font-size: 12px;
   padding: 4px 6px;
   border: 1px solid #ddd;
-  border-radius: 6px;
+  border-radius: var(--rc-btn-radius);
 }
 
 /* --- Settings panel --- */
@@ -156,7 +165,7 @@
 #rc-settings-panel .row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--rc-gap);
 }
 #rc-settings-panel label {
   display: flex;
@@ -210,16 +219,16 @@
 .rc-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--rc-gap);
   margin-top: 2px;
 }
 .rc-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 0;
+  padding: var(--rc-btn-padding);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--rc-btn-radius);
   background: transparent;
   color: #fff;
   font-weight: 600;
@@ -230,6 +239,7 @@
   height: 16px;
   display: block;
 }
+
 
     `;
     document.head.appendChild(style);
@@ -249,7 +259,7 @@
     btn.title = "Ouvrir le panneau de réglage";
     btn.type = "button";
     btn.setAttribute("aria-label", "Ouvrir les réglages");
-    // SVG Lucide fourni (centré)
+    // SVG Lucide
     btn.innerHTML = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
          fill="none" stroke="currentColor" stroke-width="2"
