@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Status projects shortcuts
+// @name         Status DEV
 // @namespace    http://tampermonkey.net/
-// @version      1.1.8
-// @description  Ouvre un projet dans VS Code ou gitlab
+// @version      1.2.0
+// @description  Ouvre un projet dans VS Code ou gitlab + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
 // @icon         https://code.visualstudio.com/favicon.ico
@@ -25,23 +25,34 @@
     "sebastien.wp.rc.dev",
   ];
   const BRANCHES = ["master", "develop"];
-  const STORAGE_KEY = "vscode_global_host_alias";
-  const STORAGE_BRANCH_KEY = "gitlab_branch";
+  const STORAGE_HOST = "vscode_global_host_alias";
+  const STORAGE_BRANCH = "gitlab_branch";
+  const SETTINGS = {
+    row: "rc_settings_row_mode",
+    opacity: "rc_settings_icon_opacity_pct",
+    hideHost: "rc_settings_hide_host",
+    wrapSiteKey: "rc_settings_wrap_sitekey",
+    showDev: "rc_settings_show_dev",
+    showVS: "rc_settings_show_vscode",
+    showGL: "rc_settings_show_gitlab",
+  };
 
   const SITEKEY_UPDATE = [{ initial: "", updated: "" }];
   const GITLAB_V2 = ["marseille-tourisme", "ot-verbier", "broceliande"];
+  const URL_MODIFIER = [
+    { initial: "labauleguerande", updated: "labaule" },
+    { initial: "perchesarthois", updated: "perche-sarthois" },
+  ];
 
-  const getCurrentHost = () =>
-    localStorage.getItem(STORAGE_KEY) || HOST_ALIASES[0];
-  const setCurrentHost = (host) => {
-    localStorage.setItem(STORAGE_KEY, host);
+  const getHost = () => localStorage.getItem(STORAGE_HOST) || HOST_ALIASES[0];
+  const setHost = (host) => {
+    localStorage.setItem(STORAGE_HOST, host);
     document.documentElement.setAttribute("data-vscode-host", host);
   };
 
-  const getCurrentBranch = () =>
-    localStorage.getItem(STORAGE_BRANCH_KEY) || BRANCHES[0];
-  const setCurrentBranch = (branch) => {
-    localStorage.setItem(STORAGE_BRANCH_KEY, branch);
+  const getBranch = () => localStorage.getItem(STORAGE_BRANCH) || BRANCHES[0];
+  const setBranch = (branch) => {
+    localStorage.setItem(STORAGE_BRANCH, branch);
     document.documentElement.setAttribute("data-gitlab-branch", branch);
   };
 
@@ -50,33 +61,110 @@
     const style = document.createElement("style");
     style.id = "vscode-userscript-style";
     style.textContent = `
-/* --- Styles globaux --- */
-
 :root {
   --rc-accent: rgb(247, 109, 143);
-  --rc-icon-opacity: 1;
   --rc-gap: 8px;
   --rc-btn-padding: 6px 0;
   --rc-btn-radius: 6px;
+  --rc-icon-opacity: 1;
 }
 
-[data-vscode-ui] button .vscode-icon {
-  transition: transform 0.15s ease, filter 0.2s ease;
-  will-change: transform;
+:root[data-show-dev="0"] .rc-btn--dev {
+  display: none !important;
+}
+:root[data-show-vs="0"] .rc-btn--vs {
+  display: none !important;
+}
+:root[data-show-gl="0"] .rc-btn--gl {
+  display: none !important;
+}
+
+.cores_wrapper {
+  font-family: "Courier New", Courier, monospace;
+  color: #fff;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  gap: 1rem;
+  margin: 20px 0 20px 20px;
+  padding-bottom: 15px;
+  cursor: grab;
+  user-select: none;
+  scroll-snap-type: x mandatory;
+}
+
+.core {
+  flex: 0 0 auto;
+  width: 380px;
+  min-width: 380px;
+  max-width: 380px;
+  scroll-snap-align: start;
+  overflow: hidden;
+  contain: content;
+}
+.core table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.core td {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.core td.status {
+  width: 90px;
+  text-align: left;
+}
+.core td.site_key {
+  width: auto;
+  position: relative;
+}
+
+td.site_key .rc-cellwrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+}
+td.site_key .rc-cellwrap > a {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+:root[data-wrap-sitekey="1"] td.site_key .rc-cellwrap > a {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.rc-inline {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rc-gap);
+  flex: 0 0 auto;
+}
+
+.plugin-icon {
+  opacity: var(--rc-icon-opacity, 1);
+  transition: opacity 0.15s ease, transform 0.15s ease, filter 0.2s ease;
   transform-origin: center;
 }
-[data-vscode-ui] button:hover .vscode-icon {
-  transform: scale(1.18);
+.rc-btn:hover .plugin-icon {
+  transform: scale(1.12);
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
 }
-[data-vscode-ui] button:active .vscode-icon {
+.rc-btn:active .plugin-icon {
   transform: scale(0.96);
 }
-.core {
-  min-width: 370px !important;
-}
 
-/* --- Global host selector --- */
 #vscode-global-host {
   position: fixed;
   top: 10px;
@@ -107,15 +195,6 @@
   padding: 4px 6px;
   border: 1px solid #ddd;
   border-radius: var(--rc-btn-radius);
-}
-
-/* --- Settings panel --- */
-:root {
-  --rc-accent: rgb(247, 109, 143);
-}
-.vscode-icon {
-  opacity: var(--rc-icon-opacity, 1);
-  transition: opacity 0.15s ease;
 }
 
 #rc-settings-btn {
@@ -167,16 +246,15 @@
   align-items: center;
   gap: var(--rc-gap);
 }
-#rc-settings-panel label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
+#rc-settings-panel .grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
-#rc-row-toggle,
-#rc-hide-host {
-  accent-color: var(--rc-accent);
-  transform: scale(1.1);
+#rc-settings-panel .flex {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 #rc-icon-opacity {
@@ -215,7 +293,6 @@
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
 }
 
-/* --- Bar & Buttons  --- */
 .rc-bar {
   display: flex;
   align-items: center;
@@ -240,8 +317,22 @@
   display: block;
 }
 
+#rc-settings-panel input[type="checkbox"] {
+  accent-color: var(--rc-accent);
+}
+#rc-settings-panel input[type="checkbox"]:checked {
+  background-color: var(--rc-accent);
+  border-color: var(--rc-accent);
+}
 
-    `;
+hr {
+  border: none;
+  border-top: 1px dashed var(--rc-accent);
+  opacity: 0.5;
+  margin: 2px 0 10px 0;
+}
+
+`;
     document.head.appendChild(style);
   }
 
@@ -249,119 +340,148 @@
     if (window.__rcSettingsInited) return;
     window.__rcSettingsInited = true;
 
-    const HOST_ID = "vscode-global-host";
-    const STORAGE_KEY_ROW = "rc_settings_row_mode";
-    const STORAGE_KEY_OPACITY = "rc_settings_icon_opacity_pct"; // 0..100
-
-    // ——— UI ———
     const btn = document.createElement("button");
     btn.id = "rc-settings-btn";
-    btn.title = "Ouvrir le panneau de réglage";
     btn.type = "button";
-    btn.setAttribute("aria-label", "Ouvrir les réglages");
-    // SVG Lucide
-    btn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-         fill="none" stroke="currentColor" stroke-width="2"
-         stroke-linecap="round" stroke-linejoin="round"
-         class="lucide lucide-settings-icon lucide-settings">
-      <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  `;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>`;
 
     const panel = document.createElement("div");
     panel.id = "rc-settings-panel";
     panel.innerHTML = `
-    <div class="row">
-      <label title="Quand activé, #${HOST_ID} passe en flex-direction: row">
-        <input type="checkbox" id="rc-row-toggle">
-        Orientation en ligne
-      </label>
-    </div>
-    <div class="row" style="margin-top:6px;">
-  <label>
-    <input type="checkbox" id="rc-hide-host">
-    Masquer le panneau des sélecteurs
-  </label>
-</div>
-    <div style="margin-top:10px;">
-      <div class="row" style="justify-content:space-between;">
-        <label for="rc-icon-opacity" style="margin-bottom:4px;">Opacité des icônes</label>
-        <span id="rc-icon-opacity-value">100%</span>
+      <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+        <strong>Réglages</strong>
+
+
+        <button type="button" id="rc-close" style="background:transparent;border:none;color:#fff;font-size:16px;line-height:1;cursor:pointer">×</button>
       </div>
-      <input type="range" id="rc-icon-opacity" min="0" max="100" step="1">
-    </div>
-  `;
+       <hr />
+
+      <div class="flex" style="margin-top:6px;">
+        <label><input type="checkbox" id="rc-wrap-sitekey">Afficher l'intégralité des sitekey longs</label>
+        <label><input type="checkbox" id="rc-show-dev">Afficher l'icone de lien vers le dev</label>
+        <label><input type="checkbox" id="rc-show-vs">Afficher VS Code</label>
+        <label><input type="checkbox" id="rc-show-gl">Afficher GitLab</label>
+      </div>
+
+      <div style="margin:10px 0;">
+        <div class="row" style="justify-content:space-between;">
+          <span>Opacité des icônes</span><span id="rc-icon-opacity-value">100%</span>
+        </div>
+        <input type="range" id="rc-icon-opacity" min="0" max="100" step="1">
+      </div>
+      <div class="flex" style="margin-top:10px;">
+       <label><input type="checkbox" id="rc-hide-host">Masquer les sélecteurs</label>
+         <label><input type="checkbox" id="rc-row-toggle">Panneau de selection en ligne / compact</label>
+      </div>
+    `;
 
     document.body.appendChild(btn);
     document.body.appendChild(panel);
 
-    const toggleRow = panel.querySelector("#rc-row-toggle");
-    const toggleHideHost = panel.querySelector("#rc-hide-host");
+    const wrapCbx = panel.querySelector("#rc-wrap-sitekey");
+    const devCbx = panel.querySelector("#rc-show-dev");
+    const vsCbx = panel.querySelector("#rc-show-vs");
+    const glCbx = panel.querySelector("#rc-show-gl");
+    const rowCbx = panel.querySelector("#rc-row-toggle");
+    const hideCbx = panel.querySelector("#rc-hide-host");
     const slider = panel.querySelector("#rc-icon-opacity");
-    const sliderValue = panel.querySelector("#rc-icon-opacity-value");
+    const sliderVal = panel.querySelector("#rc-icon-opacity-value");
+    const closeBtn = panel.querySelector("#rc-close");
 
-    // ——— Helpers ———
-    const getHost = () => document.getElementById(HOST_ID);
-    const applyRowMode = (enabled) => {
-      const host = getHost();
-      if (host) host.style.flexDirection = enabled ? "row" : "";
-    };
-    const applyIconOpacityPct = (pct) => {
-      const clamped = Math.max(0, Math.min(100, pct)); // 0..100
-      document.documentElement.style.setProperty(
-        "--rc-icon-opacity",
-        String(clamped / 100)
+    function initBool(key, defTrue = true) {
+      const v = localStorage.getItem(key);
+      if (v === null) return defTrue;
+      return v === "true";
+    }
+    function saveBool(key, val) {
+      localStorage.setItem(key, String(val));
+    }
+
+    function applyWrapSiteKey(enabled) {
+      document.documentElement.setAttribute(
+        "data-wrap-sitekey",
+        enabled ? "1" : "0"
       );
-      sliderValue.textContent = `${clamped}%`;
-    };
-    const STORAGE_KEY_HIDE = "rc_settings_hide_host";
-    const applyHideHost = (hidden) => {
-      const host = getHost();
+    }
+    function applyIconVisibility(flag, attr) {
+      document.documentElement.setAttribute(attr, flag ? "1" : "0");
+    }
+    function applyRow(enabled) {
+      const host = document.getElementById("vscode-global-host");
+      if (host) host.style.flexDirection = enabled ? "row" : "";
+    }
+    function applyHideHost(hidden) {
+      const host = document.getElementById("vscode-global-host");
       if (host) host.style.display = hidden ? "none" : "";
-    };
+    }
+    function applyOpacity(pct) {
+      const v = Math.max(0, Math.min(100, pct));
+      const val = String(v / 100);
+      document.documentElement.style.setProperty("--rc-icon-opacity", val);
+      document.querySelectorAll(".cores_wrapper").forEach((el) => {
+        el.style.setProperty("--rc-icon-opacity", val);
+      });
+      sliderVal.textContent = `${v}%`;
+    }
 
-    // ——— Init ———
-    const savedRow = localStorage.getItem(STORAGE_KEY_ROW) === "true";
-    toggleRow.checked = savedRow;
-    applyRowMode(savedRow);
+    wrapCbx.checked = initBool(SETTINGS.wrapSiteKey, false);
+    devCbx.checked = initBool(SETTINGS.showDev, true);
+    vsCbx.checked = initBool(SETTINGS.showVS, true);
+    glCbx.checked = initBool(SETTINGS.showGL, true);
+    rowCbx.checked = initBool(SETTINGS.row, false);
+    hideCbx.checked = initBool(SETTINGS.hideHost, false);
 
     const savedPct = parseInt(
-      localStorage.getItem(STORAGE_KEY_OPACITY) ?? "100",
+      localStorage.getItem(SETTINGS.opacity) ?? "100",
       10
     );
-    const initialPct = Number.isFinite(savedPct)
-      ? Math.max(0, Math.min(100, savedPct))
-      : 100;
-    slider.value = String(initialPct);
-    applyIconOpacityPct(initialPct);
+    slider.value = String(Number.isFinite(savedPct) ? savedPct : 100);
 
-    const savedHide = localStorage.getItem(STORAGE_KEY_HIDE) === "true";
-    toggleHideHost.checked = savedHide;
-    applyHideHost(savedHide);
+    applyWrapSiteKey(wrapCbx.checked);
+    applyIconVisibility(devCbx.checked, "data-show-dev");
+    applyIconVisibility(vsCbx.checked, "data-show-vs");
+    applyIconVisibility(glCbx.checked, "data-show-gl");
+    applyRow(rowCbx.checked);
+    applyHideHost(hideCbx.checked);
+    applyOpacity(parseInt(slider.value, 10));
 
-    // ——— Listeners ———
-    toggleRow.addEventListener("change", () => {
-      const enabled = toggleRow.checked;
-      localStorage.setItem(STORAGE_KEY_ROW, String(enabled));
-      applyRowMode(enabled);
+    wrapCbx.addEventListener("change", () => {
+      saveBool(SETTINGS.wrapSiteKey, wrapCbx.checked);
+      applyWrapSiteKey(wrapCbx.checked);
     });
-
+    devCbx.addEventListener("change", () => {
+      saveBool(SETTINGS.showDev, devCbx.checked);
+      applyIconVisibility(devCbx.checked, "data-show-dev");
+    });
+    vsCbx.addEventListener("change", () => {
+      saveBool(SETTINGS.showVS, vsCbx.checked);
+      applyIconVisibility(vsCbx.checked, "data-show-vs");
+    });
+    glCbx.addEventListener("change", () => {
+      saveBool(SETTINGS.showGL, glCbx.checked);
+      applyIconVisibility(glCbx.checked, "data-show-gl");
+    });
+    rowCbx.addEventListener("change", () => {
+      saveBool(SETTINGS.row, rowCbx.checked);
+      applyRow(rowCbx.checked);
+    });
+    hideCbx.addEventListener("change", () => {
+      saveBool(SETTINGS.hideHost, hideCbx.checked);
+      applyHideHost(hideCbx.checked);
+    });
     slider.addEventListener("input", () => {
-      const pct = parseInt(slider.value, 10);
-      localStorage.setItem(STORAGE_KEY_OPACITY, String(pct));
-      applyIconOpacityPct(pct);
+      localStorage.setItem(
+        SETTINGS.opacity,
+        String(parseInt(slider.value, 10))
+      );
+      applyOpacity(parseInt(slider.value, 10));
     });
 
     btn.addEventListener("click", () => {
       panel.style.display = panel.style.display === "block" ? "none" : "block";
     });
-
-    toggleHideHost.addEventListener("change", () => {
-      const hidden = toggleHideHost.checked;
-      localStorage.setItem(STORAGE_KEY_HIDE, String(hidden));
-      applyHideHost(hidden);
+    closeBtn.addEventListener("click", () => {
+      panel.style.display = "none";
     });
   }
 
@@ -371,64 +491,52 @@
     const wrap = document.createElement("div");
     wrap.id = "vscode-global-host";
 
-    // —— Host row —— //
     const rowHost = document.createElement("div");
     rowHost.className = "row";
-
     const iconVS = document.createElement("img");
     iconVS.src = "https://code.visualstudio.com/favicon.ico";
     iconVS.alt = "VS Code";
     iconVS.width = 16;
     iconVS.height = 16;
     iconVS.style.opacity = "0.9";
-
     const labelHost = document.createElement("label");
     labelHost.textContent = "Host :";
-
     const selectHost = document.createElement("select");
-    const currentHost = getCurrentHost();
-    HOST_ALIASES.forEach((host) => {
+    const currHost = getHost();
+    HOST_ALIASES.forEach((h) => {
       const opt = document.createElement("option");
-      opt.value = host;
-      opt.textContent = host;
-      if (host === currentHost) opt.selected = true;
+      opt.value = h;
+      opt.textContent = h;
+      if (h === currHost) opt.selected = true;
       selectHost.appendChild(opt);
     });
-    selectHost.addEventListener("change", () =>
-      setCurrentHost(selectHost.value)
-    );
-
+    selectHost.addEventListener("change", () => setHost(selectHost.value));
     rowHost.appendChild(iconVS);
     rowHost.appendChild(labelHost);
     rowHost.appendChild(selectHost);
 
-    // —— Branch row —— //
     const rowBranch = document.createElement("div");
     rowBranch.className = "row";
-
     const iconGL = document.createElement("img");
     iconGL.src = "https://i.imgur.com/BcoMk3p.png";
     iconGL.alt = "GitLab";
     iconGL.width = 16;
     iconGL.height = 16;
     iconGL.style.opacity = "0.9";
-
     const labelBranch = document.createElement("label");
     labelBranch.textContent = "Branch :";
-
     const selectBranch = document.createElement("select");
-    const currentBranch = getCurrentBranch();
+    const currBranch = getBranch();
     BRANCHES.forEach((b) => {
       const opt = document.createElement("option");
       opt.value = b;
       opt.textContent = b;
-      if (b === currentBranch) opt.selected = true;
+      if (b === currBranch) opt.selected = true;
       selectBranch.appendChild(opt);
     });
     selectBranch.addEventListener("change", () =>
-      setCurrentBranch(selectBranch.value)
+      setBranch(selectBranch.value)
     );
-
     rowBranch.appendChild(iconGL);
     rowBranch.appendChild(labelBranch);
     rowBranch.appendChild(selectBranch);
@@ -437,8 +545,8 @@
     wrap.appendChild(rowBranch);
     document.body.appendChild(wrap);
 
-    setCurrentHost(currentHost);
-    setCurrentBranch(currentBranch);
+    setHost(currHost);
+    setBranch(currBranch);
   }
 
   function buildGitlabUrl(siteKey, branch) {
@@ -448,74 +556,128 @@
       : `http://gitlab.rc.prod/wordpress-sites/${encoded}/tree/${branch}`;
   }
 
+  function buildDevUrl(siteKey) {
+    if (!siteKey) return null;
+    const match = URL_MODIFIER.find((s) => s.initial.trim() === siteKey.trim());
+    const updated = (match?.updated || siteKey).trim();
+    return `http://www.${encodeURIComponent(updated)}.wp.rc-dev.com`;
+  }
+
   function enhanceCard(cardEl) {
-    if (!cardEl || cardEl.querySelector("[data-vscode-ui]")) return;
-    const rawSiteKey = cardEl.querySelector(".site_key a")?.textContent?.trim();
-    if (!rawSiteKey) return;
+    if (!cardEl) return;
+    const cellEl = cardEl.querySelector(".site_key");
+    if (!cellEl || cellEl.querySelector(".rc-inline")) return;
+    const anchor = cellEl.querySelector("a");
+    const raw = anchor?.textContent?.trim();
+    if (!raw) return;
 
-    // => check et remplace si le sitekey est différent
-    const match = SITEKEY_UPDATE.find((stk) => stk.initial === rawSiteKey);
-    const siteKey = match ? match.updated : rawSiteKey;
+    const mapped = SITEKEY_UPDATE.find((s) => s.initial === raw);
+    const siteKey = (mapped ? mapped.updated : raw).trim();
 
-    if (getComputedStyle(cardEl).position === "static") {
-      cardEl.style.position = "relative";
+    let wrap = cellEl.querySelector(".rc-cellwrap");
+    if (!wrap) {
+      wrap = document.createElement("span");
+      wrap.className = "rc-cellwrap";
+      if (anchor && anchor.parentElement === cellEl) wrap.appendChild(anchor);
+      cellEl.appendChild(wrap);
     }
 
-    const bar = document.createElement("div");
-    bar.setAttribute("data-vscode-ui", "true");
-    bar.className = "rc-bar";
+    const inline = document.createElement("span");
+    inline.className = "rc-inline";
 
-    const btnVS = document.createElement("button");
-    btnVS.type = "button";
-    btnVS.className = "rc-btn";
+    const createBtn = (cls, title, src, onClick) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = `rc-btn ${cls}`;
+      b.title = title;
+      const i = document.createElement("img");
+      i.src = src;
+      i.className = "plugin-icon rc-icon";
+      b.appendChild(i);
+      b.addEventListener("click", onClick);
+      return b;
+    };
 
-    const iconVS = document.createElement("img");
-    iconVS.src = "https://code.visualstudio.com/favicon.ico";
-    iconVS.className = "vscode-icon rc-icon";
+    const btnDev = createBtn(
+      "rc-btn--dev",
+      "Ouvrir la version de dev",
+      "https://i.imgur.com/lLwS7mg.png",
+      () => {
+        const url = buildDevUrl(siteKey);
+        if (url) window.open(url, "_blank");
+      }
+    );
 
-    const btnGL = document.createElement("button");
-    btnGL.type = "button";
-    btnGL.className = "rc-btn";
+    const btnVS = createBtn(
+      "rc-btn--vs",
+      "Ouvrir dans VS Code",
+      "https://code.visualstudio.com/favicon.ico",
+      () => {
+        const host = getHost();
+        const abs = `/home/admin/www/themes/${siteKey}/current`;
+        window.location.href = encodeURI(
+          `vscode://vscode-remote/ssh-remote+${host}${abs}`
+        );
+      }
+    );
 
-    const iconGL = document.createElement("img");
-    iconGL.src = "https://i.imgur.com/BcoMk3p.png";
-    iconGL.className = "vscode-icon rc-icon";
+    const btnGL = createBtn(
+      "rc-btn--gl",
+      "Ouvrir sur GitLab",
+      "https://i.imgur.com/BcoMk3p.png",
+      () => {
+        const branch = getBranch();
+        window.open(buildGitlabUrl(siteKey, branch), "_blank");
+      }
+    );
 
-    btnVS.addEventListener("click", () => {
-      const hostAlias = getCurrentHost();
-      const absPath = `/home/admin/www/themes/${siteKey}/current`;
-      window.location.href = encodeURI(
-        `vscode://vscode-remote/ssh-remote+${hostAlias}${absPath}`
-      );
-    });
-
-    btnGL.addEventListener("click", () => {
-      const branch = getCurrentBranch();
-      window.open(buildGitlabUrl(siteKey, branch), "_blank");
-    });
-
-    btnVS.appendChild(iconVS);
-    btnGL.appendChild(iconGL);
-    bar.appendChild(btnVS);
-    bar.appendChild(btnGL);
-    cardEl.appendChild(bar);
+    inline.appendChild(btnDev);
+    inline.appendChild(btnVS);
+    inline.appendChild(btnGL);
+    wrap.appendChild(inline);
+    cellEl.setAttribute("data-vscode-ui", "true");
   }
 
   function enhanceAllCards() {
     document.querySelectorAll(".card").forEach(enhanceCard);
   }
 
+  function applyInitialFlagsFromStorage() {
+    document.documentElement.setAttribute(
+      "data-wrap-sitekey",
+      localStorage.getItem(SETTINGS.wrapSiteKey) === "true" ? "1" : "0"
+    );
+    document.documentElement.setAttribute(
+      "data-show-dev",
+      localStorage.getItem(SETTINGS.showDev) === "false" ? "0" : "1"
+    );
+    document.documentElement.setAttribute(
+      "data-show-vs",
+      localStorage.getItem(SETTINGS.showVS) === "false" ? "0" : "1"
+    );
+    document.documentElement.setAttribute(
+      "data-show-gl",
+      localStorage.getItem(SETTINGS.showGL) === "false" ? "0" : "1"
+    );
+    const pct = parseInt(localStorage.getItem(SETTINGS.opacity) ?? "100", 10);
+    document.documentElement.style.setProperty(
+      "--rc-icon-opacity",
+      String((Number.isFinite(pct) ? pct : 100) / 100)
+    );
+  }
+
   let __inited = false;
 
-  function globalInit() {
+  function init() {
     if (__inited) return;
     __inited = true;
 
     ensureStyles();
     ensureGlobalSelector();
+    applyInitialFlagsFromStorage();
     enhanceAllCards();
     ensureSettings();
   }
 
-  globalInit();
+  init();
 })();
