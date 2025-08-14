@@ -370,7 +370,7 @@ hr {
         <input type="range" id="rc-icon-opacity" min="0" max="100" step="1">
       </div>
       <div class="flex" style="margin-top:10px;">
-       <label><input type="checkbox" id="rc-hide-host">Masquer les sélecteurs</label>
+       <label><input type="checkbox" id="rc-hide-host">Masquer le panneau de sélection</label>
          <label><input type="checkbox" id="rc-row-toggle">Panneau de selection en ligne / compact</label>
       </div>
     `;
