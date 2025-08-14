@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.2.4
+// @version      1.2.5
 // @description  Ouvre un projet dans VS Code ou gitlab + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -73,6 +73,7 @@
   --rc-btn-padding: 6px 0;
   --rc-btn-radius: 6px;
   --rc-icon-opacity: 1;
+  --rc-td-padding: 0;
 }
 
 :root[data-show-dev="0"] .rc-btn--dev {
@@ -339,11 +340,23 @@ hr {
 }
 
 td {
-    padding: 0;
+    padding: var(--rc-td-padding);
 }
 
 `;
     document.head.appendChild(style);
+  }
+
+  function updateTdPadding() {
+    const showDev = localStorage.getItem(SETTINGS.showDev) !== "false";
+    const showVS = localStorage.getItem(SETTINGS.showVS) !== "false";
+    const showGL = localStorage.getItem(SETTINGS.showGL) !== "false";
+
+    const allHidden = !showDev && !showVS && !showGL;
+    document.documentElement.style.setProperty(
+      "--rc-td-padding",
+      allHidden ? "5px" : "0"
+    );
   }
 
   function ensureSettings() {
@@ -441,6 +454,9 @@ td {
     rowCbx.checked = initBool(SETTINGS.row, false);
     hideCbx.checked = initBool(SETTINGS.hideHost, false);
 
+    // état initial
+    updateTdPadding();
+
     const savedPct = parseInt(
       localStorage.getItem(SETTINGS.opacity) ?? "100",
       10
@@ -462,14 +478,17 @@ td {
     devCbx.addEventListener("change", () => {
       saveBool(SETTINGS.showDev, devCbx.checked);
       applyIconVisibility(devCbx.checked, "data-show-dev");
+      updateTdPadding();
     });
     vsCbx.addEventListener("change", () => {
       saveBool(SETTINGS.showVS, vsCbx.checked);
       applyIconVisibility(vsCbx.checked, "data-show-vs");
+      updateTdPadding();
     });
     glCbx.addEventListener("change", () => {
       saveBool(SETTINGS.showGL, glCbx.checked);
       applyIconVisibility(glCbx.checked, "data-show-gl");
+      updateTdPadding();
     });
     rowCbx.addEventListener("change", () => {
       saveBool(SETTINGS.row, rowCbx.checked);
