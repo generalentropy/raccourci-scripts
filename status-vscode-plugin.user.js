@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.2.5
+// @version      1.2.6
 // @description  Ouvre un projet dans VS Code ou gitlab + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -375,7 +375,7 @@ td {
         <strong>Réglages</strong>
 
 
-        <button type="button" id="rc-close" style="background:transparent;border:none;color:#fff;font-size:16px;line-height:1;cursor:pointer">×</button>
+        <button type="button" id="rc-close" style="background:transparent;border:none;color:rgb(247, 109, 143);font-size:16px;line-height:1;cursor:pointer">×</button>
       </div>
        <hr />
 
