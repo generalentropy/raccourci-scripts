@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.2.7
+// @version      1.2.8
 // @description  Ouvre un projet dans VS Code ou gitlab + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -392,7 +392,7 @@ color: rgba(255, 171, 213, 1);
       </div>
 
       <div style="margin:15px 0;">
-        <div class="row" style="justify-content:space-between;">
+        <div class="row" style="justify-content:space-between; margin-bottom:5px;">
           <span>Opacité des icônes</span><span id="rc-icon-opacity-value">100%</span>
         </div>
         <input type="range" id="rc-icon-opacity" min="0" max="100" step="1">
