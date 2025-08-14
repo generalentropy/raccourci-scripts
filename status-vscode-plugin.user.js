@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Woody Status Supercharged 🚀
 // @namespace    http://tampermonkey.net/
-// @version      1.2.12
-// @description  Ouvre un projet dans VS Code ou gitlab + site de dev
+// @version      1.2.13
+// @description  Ouvre un projet dans VS Code ou gitlab (selecteur de branche) + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
 // @icon         https://i.imgur.com/5EOGnVN.png
@@ -84,6 +84,18 @@
 }
 :root[data-show-gl="0"] .rc-btn--gl {
   display: none !important;
+}
+
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-spin {
+  to {
+    --angle: 360deg;
+  }
 }
 
 .cores_wrapper {
@@ -232,22 +244,59 @@ td.site_key .rc-cellwrap > a {
   display: block;
 }
 
+/* Panel  */
 #rc-settings-panel {
   position: fixed;
-  right: 16px;
   bottom: 70px;
-  z-index: 99999;
+  right: 16px;
   min-width: 260px;
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(20, 20, 20, 0.95);
-  color: #f5f5f5;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-  font: 13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #111;
+  border-radius: 1rem;
+  padding: 1.2rem;
   display: none;
+  z-index: 9999;
+
+  color: #eee;
+  font-family: sans-serif;
+
+  isolation: isolate;
 }
+
+/* Bordure tournante  */
+#rc-settings-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 0;
+  pointer-events: none;
+
+  background: conic-gradient(
+    from var(--angle),
+    transparent 0%,
+    transparent 45%,
+    rgba(252, 105, 179, 1) 100%,
+    transparent 60%,
+    transparent 100%
+  );
+  animation: border-spin 11s linear infinite;
+  filter: blur(8px);
+
+  padding: 2px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+
+  /* pas sûr, à tester sous firefox */
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* Le contenu du panel passe au-dessus de la bordure */
+#rc-settings-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
 #rc-settings-panel .row {
   display: flex;
   align-items: center;
@@ -327,7 +376,6 @@ td.site_key .rc-cellwrap > a {
 #rc-settings-panel input[type="checkbox"] {
   accent-color: var(--rc-accent);
   margin-right: 8px;
-
 }
 #rc-settings-panel input[type="checkbox"]:checked {
   background-color: var(--rc-accent);
@@ -342,13 +390,18 @@ hr {
 }
 
 td {
-    padding: var(--rc-td-padding);
+  padding: var(--rc-td-padding);
 }
 
 #rc-icon-opacity-value {
-font-weight:bold;
-color: rgba(255, 171, 213, 1);
+  font-weight: bold;
+  color: rgba(255, 171, 213, 1);
 }
+
+#rc-close:hover {
+  opacity: 1 !important;
+}
+
 
 `;
     document.head.appendChild(style);
@@ -380,7 +433,7 @@ color: rgba(255, 171, 213, 1);
     panel.innerHTML = `
       <div class="row" style="justify-content:space-between;margin-bottom:8px;">
         <strong>Réglages</strong>
-       <button type="button" id="rc-close" style="background:transparent;border:none;color:rgba(255, 171, 213, 1);font-size:16px;line-height:1;cursor:pointer">×</button>
+       <button type="button" id="rc-close" style="background:transparent;border:none;color:white;font-size:16px;line-height:1;cursor:pointer;opacity:0.8"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></button>
       </div>
        <hr />
 
