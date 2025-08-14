@@ -551,6 +551,7 @@ hr {
 
   function buildGitlabUrl(siteKey, branch) {
     const encoded = encodeURIComponent(siteKey);
+    // check si  gitlab V1 ou V2
     return GITLAB_V2.includes(siteKey)
       ? `https://git.rc-prod.com/raccourci/woody-wordpress/themes/${encoded}/-/tree/${branch}`
       : `http://gitlab.rc.prod/wordpress-sites/${encoded}/tree/${branch}`;
@@ -558,6 +559,7 @@ hr {
 
   function buildDevUrl(siteKey) {
     if (!siteKey) return null;
+    // check si le l'URL est différente du sitekey affiché
     const match = URL_MODIFIER.find((s) => s.initial.trim() === siteKey.trim());
     const updated = (match?.updated || siteKey).trim();
     return `http://www.${encodeURIComponent(updated)}.wp.rc-dev.com`;
@@ -571,6 +573,7 @@ hr {
     const raw = anchor?.textContent?.trim();
     if (!raw) return;
 
+    // check si le sitekey affiché diffère du folder du projet
     const mapped = SITEKEY_UPDATE.find((s) => s.initial === raw);
     const siteKey = (mapped ? mapped.updated : raw).trim();
 
