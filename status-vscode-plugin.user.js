@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.2.3
+// @version      1.2.4
 // @description  Ouvre un projet dans VS Code ou gitlab + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -569,12 +569,12 @@ td {
 
   function buildDevUrl(siteKey) {
     if (!siteKey) return null;
-    // check si le l'URL est différente du sitekey affiché
+    // vérifie si le sitekey affiché diffère de celui de l'URL
     const match = URL_MODIFIER.find((s) => s.initial.trim() === siteKey.trim());
-    const updated = (match?.updated || siteKey).trim();
+    const finalSiteKey = (match?.updated || siteKey).trim();
     const www = match?.shortUrl ? "" : "www.";
 
-    return `http://${www}${encodeURIComponent(updated)}.wp.rc-dev.com`;
+    return `http://${www}${encodeURIComponent(finalSiteKey)}.wp.rc-dev.com`;
   }
 
   function enhanceCard(cardEl) {
