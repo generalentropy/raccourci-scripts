@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Status DEV
+// @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
 // @version      1.2.1
 // @description  Ouvre un projet dans VS Code ou gitlab + site de dev
