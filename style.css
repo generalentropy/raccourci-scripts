@@ -1,30 +1,107 @@
-/* --- Styles globaux --- */
-
 :root {
   --rc-accent: rgb(247, 109, 143);
-  --rc-icon-opacity: 1;
   --rc-gap: 8px;
   --rc-btn-padding: 6px 0;
   --rc-btn-radius: 6px;
+  --rc-icon-opacity: 1;
 }
 
-[data-vscode-ui] button .vscode-icon {
-  transition: transform 0.15s ease, filter 0.2s ease;
-  will-change: transform;
+:root[data-show-dev="0"] .rc-btn--dev {
+  display: none !important;
+}
+:root[data-show-vs="0"] .rc-btn--vs {
+  display: none !important;
+}
+:root[data-show-gl="0"] .rc-btn--gl {
+  display: none !important;
+}
+
+.cores_wrapper {
+  font-family: "Courier New", Courier, monospace;
+  color: #fff;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  gap: 1rem;
+  margin: 20px 0 20px 20px;
+  padding-bottom: 15px;
+  cursor: grab;
+  user-select: none;
+  scroll-snap-type: x mandatory;
+}
+
+.core {
+  flex: 0 0 auto;
+  width: 380px;
+  min-width: 380px;
+  max-width: 380px;
+  scroll-snap-align: start;
+  overflow: hidden;
+  contain: content;
+}
+.core table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.core td {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.core td.status {
+  width: 90px;
+  text-align: left;
+}
+.core td.site_key {
+  width: auto;
+  position: relative;
+}
+
+td.site_key .rc-cellwrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+}
+td.site_key .rc-cellwrap > a {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+:root[data-wrap-sitekey="1"] td.site_key .rc-cellwrap > a {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.rc-inline {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rc-gap);
+  flex: 0 0 auto;
+}
+
+.plugin-icon {
+  opacity: var(--rc-icon-opacity, 1);
+  transition: opacity 0.15s ease, transform 0.15s ease, filter 0.2s ease;
   transform-origin: center;
 }
-[data-vscode-ui] button:hover .vscode-icon {
-  transform: scale(1.18);
+.rc-btn:hover .plugin-icon {
+  transform: scale(1.12);
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
 }
-[data-vscode-ui] button:active .vscode-icon {
+.rc-btn:active .plugin-icon {
   transform: scale(0.96);
 }
-.core {
-  min-width: 370px !important;
-}
 
-/* --- Global host selector --- */
 #vscode-global-host {
   position: fixed;
   top: 10px;
@@ -55,15 +132,6 @@
   padding: 4px 6px;
   border: 1px solid #ddd;
   border-radius: var(--rc-btn-radius);
-}
-
-/* --- Settings panel --- */
-:root {
-  --rc-accent: rgb(247, 109, 143);
-}
-.vscode-icon {
-  opacity: var(--rc-icon-opacity, 1);
-  transition: opacity 0.15s ease;
 }
 
 #rc-settings-btn {
@@ -115,16 +183,15 @@
   align-items: center;
   gap: var(--rc-gap);
 }
-#rc-settings-panel label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
+#rc-settings-panel .grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
-#rc-row-toggle,
-#rc-hide-host {
-  accent-color: var(--rc-accent);
-  transform: scale(1.1);
+#rc-settings-panel .flex {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 #rc-icon-opacity {
@@ -163,7 +230,6 @@
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
 }
 
-/* --- Bar & Buttons  --- */
 .rc-bar {
   display: flex;
   align-items: center;
@@ -186,4 +252,19 @@
   width: 16px;
   height: 16px;
   display: block;
+}
+
+#rc-settings-panel input[type="checkbox"] {
+  accent-color: var(--rc-accent);
+}
+#rc-settings-panel input[type="checkbox"]:checked {
+  background-color: var(--rc-accent);
+  border-color: var(--rc-accent);
+}
+
+hr {
+  border: none;
+  border-top: 1px dashed var(--rc-accent);
+  opacity: 0.5;
+  margin: 2px 0 10px 0;
 }
