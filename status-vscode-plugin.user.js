@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.1.7
+// @version      1.1.8
 // @description  Ouvre un projet dans VS Code ou gitlab
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -50,38 +50,197 @@
     const style = document.createElement("style");
     style.id = "vscode-userscript-style";
     style.textContent = `
-      [data-vscode-ui] button .vscode-icon {
-        transition: transform .15s ease, filter .2s ease;
-        will-change: transform;
-        transform-origin: center;
-      }
-      [data-vscode-ui] button:hover .vscode-icon {
-        transform: scale(1.18);
-        filter: drop-shadow(0 1px 2px rgba(0,0,0,.25));
-      }
-      [data-vscode-ui] button:active .vscode-icon {
-        transform: scale(0.96);
-      }
-      .core { min-width: 370px !important; }
-      #vscode-global-host {
-        position: fixed; top: 10px; right: 10px; z-index: 9999;
-        display: flex; flex-direction: column; gap: 6px;
-        padding: 6px 8px; border-radius: 8px;
-        border: 1px solid rgba(0,0,0,0.08);
-        background: rgba(255,255,255,0.9);
-        backdrop-filter: blur(4px);
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      }
-      #vscode-global-host .row {
-        display: flex; align-items: center; gap: 8px;
-      }
-      #vscode-global-host label {
-        font-size: 12px; color: #333; white-space: nowrap;
-      }
-      #vscode-global-host select {
-        font-size: 12px; padding: 4px 6px;
-        border: 1px solid #ddd; border-radius: 6px;
-      }
+/* --- Styles globaux --- */
+
+:root {
+  --rc-accent: rgb(247, 109, 143);
+  --rc-icon-opacity: 1;
+  --rc-gap: 8px;
+  --rc-btn-padding: 6px 0;
+  --rc-btn-radius: 6px;
+}
+
+[data-vscode-ui] button .vscode-icon {
+  transition: transform 0.15s ease, filter 0.2s ease;
+  will-change: transform;
+  transform-origin: center;
+}
+[data-vscode-ui] button:hover .vscode-icon {
+  transform: scale(1.18);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+[data-vscode-ui] button:active .vscode-icon {
+  transform: scale(0.96);
+}
+.core {
+  min-width: 370px !important;
+}
+
+/* --- Global host selector --- */
+#vscode-global-host {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--rc-btn-radius);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+#vscode-global-host .row {
+  display: flex;
+  align-items: center;
+  gap: var(--rc-gap);
+}
+#vscode-global-host label {
+  font-size: 12px;
+  color: #333;
+  white-space: nowrap;
+}
+#vscode-global-host select {
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: var(--rc-btn-radius);
+}
+
+/* --- Settings panel --- */
+:root {
+  --rc-accent: rgb(247, 109, 143);
+}
+.vscode-icon {
+  opacity: var(--rc-icon-opacity, 1);
+  transition: opacity 0.15s ease;
+}
+
+#rc-settings-btn {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(30, 30, 30, 0.9);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+#rc-settings-btn:hover {
+  background: rgba(45, 45, 45, 0.95);
+}
+#rc-settings-btn svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+#rc-settings-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 70px;
+  z-index: 99999;
+  min-width: 260px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(20, 20, 20, 0.95);
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  font: 13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  display: none;
+}
+#rc-settings-panel .row {
+  display: flex;
+  align-items: center;
+  gap: var(--rc-gap);
+}
+#rc-settings-panel label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+#rc-row-toggle,
+#rc-hide-host {
+  accent-color: var(--rc-accent);
+  transform: scale(1.1);
+}
+
+#rc-icon-opacity {
+  width: 100%;
+  accent-color: var(--rc-accent);
+  background: transparent;
+  cursor: pointer;
+}
+#rc-icon-opacity::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+#rc-icon-opacity::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--rc-accent);
+  margin-top: -6px;
+  border: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+}
+#rc-icon-opacity::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+#rc-icon-opacity::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--rc-accent);
+  border: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+}
+
+/* --- Bar & Buttons  --- */
+.rc-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--rc-gap);
+  margin-top: 2px;
+}
+.rc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--rc-btn-padding);
+  border: none;
+  border-radius: var(--rc-btn-radius);
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rc-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+
     `;
     document.head.appendChild(style);
   }
@@ -94,71 +253,13 @@
     const STORAGE_KEY_ROW = "rc_settings_row_mode";
     const STORAGE_KEY_OPACITY = "rc_settings_icon_opacity_pct"; // 0..100
 
-    // ——— Styles ———
-    const style = document.createElement("style");
-    style.textContent = `
-    :root { --rc-accent: rgb(247, 109, 143); }
-    .vscode-icon { opacity: var(--rc-icon-opacity, 1); transition: opacity .15s ease; }
-
-    #rc-settings-btn {
-      position: fixed; right: 16px; bottom: 16px; z-index: 99999;
-      display: flex; align-items: center; justify-content: center;
-      width: 44px; height: 44px; border-radius: 50%; cursor: pointer; user-select: none;
-      background: rgba(30,30,30,0.9); color: #fff;
-      border: 1px solid rgba(255,255,255,0.1);
-      backdrop-filter: blur(6px); box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-    }
-    #rc-settings-btn:hover { background: rgba(45,45,45,0.95); }
-    #rc-settings-btn svg { width: 20px; height: 20px; display:block; }
-
-    #rc-settings-panel {
-      position: fixed; right: 16px; bottom: 70px; z-index: 99999;
-      min-width: 260px; padding: 12px; border-radius: 12px;
-      background: rgba(20,20,20,0.95); color: #f5f5f5;
-      border: 1px solid rgba(255,255,255,0.1);
-      backdrop-filter: blur(6px); box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-      font: 13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      display: none;
-    }
-    #rc-settings-panel .row { display:flex; align-items:center; gap:8px; }
-    #rc-settings-panel label { display:flex; align-items:center; gap:6px; cursor:pointer; }
-
-
-    #rc-row-toggle { accent-color: var(--rc-accent); transform: scale(1.1); }
-    #rc-hide-host { accent-color: var(--rc-accent); transform: scale(1.1); }
-
-    #rc-icon-opacity { width: 100%; accent-color: var(--rc-accent); background: transparent;  cursor: pointer; }
-    /* WebKit */
-    #rc-icon-opacity::-webkit-slider-runnable-track {
-      height: 4px; border-radius: 999px; background: rgba(255,255,255,0.2);
-    }
-    #rc-icon-opacity::-webkit-slider-thumb {
-      -webkit-appearance: none; appearance: none;
-      width: 16px; height: 16px; border-radius: 50%;
-      background: var(--rc-accent);
-      margin-top: -6px; border: none; box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
-    }
-    /* Firefox */
-    #rc-icon-opacity::-moz-range-track {
-      height: 4px; border-radius: 999px; background: rgba(255,255,255,0.2);
-    }
-    #rc-icon-opacity::-moz-range-thumb {
-      width: 16px; height: 16px; border-radius: 50%;
-      background: var(--rc-accent); border: none;
-      box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
-
-    }
-}
-  `;
-    document.head.appendChild(style);
-
     // ——— UI ———
     const btn = document.createElement("button");
     btn.id = "rc-settings-btn";
     btn.title = "Ouvrir le panneau de réglage";
     btn.type = "button";
     btn.setAttribute("aria-label", "Ouvrir les réglages");
-    // SVG Lucide fourni (centré)
+    // SVG Lucide
     btn.innerHTML = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
          fill="none" stroke="currentColor" stroke-width="2"
@@ -362,22 +463,23 @@
 
     const bar = document.createElement("div");
     bar.setAttribute("data-vscode-ui", "true");
-    bar.style.display = "flex";
-    bar.style.alignItems = "center";
-    bar.style.gap = "8px";
-    bar.style.marginTop = "2px";
+    bar.className = "rc-bar";
 
     const btnVS = document.createElement("button");
     btnVS.type = "button";
-    btnVS.style.cssText = baseBtnStyle();
-    btnVS.title = `Ouvrir ${siteKey} dans VS Code`;
+    btnVS.className = "rc-btn";
 
     const iconVS = document.createElement("img");
     iconVS.src = "https://code.visualstudio.com/favicon.ico";
-    iconVS.width = 16;
-    iconVS.height = 16;
-    iconVS.className = "vscode-icon";
-    btnVS.appendChild(iconVS);
+    iconVS.className = "vscode-icon rc-icon";
+
+    const btnGL = document.createElement("button");
+    btnGL.type = "button";
+    btnGL.className = "rc-btn";
+
+    const iconGL = document.createElement("img");
+    iconGL.src = "https://i.imgur.com/BcoMk3p.png";
+    iconGL.className = "vscode-icon rc-icon";
 
     btnVS.addEventListener("click", () => {
       const hostAlias = getCurrentHost();
@@ -387,59 +489,33 @@
       );
     });
 
-    const btnGL = document.createElement("button");
-    btnGL.type = "button";
-    btnGL.style.cssText = baseBtnStyle();
-    btnGL.title = `Ouvrir ${siteKey} sur GitLab`;
-
-    const iconGL = document.createElement("img");
-    iconGL.src = "https://i.imgur.com/BcoMk3p.png";
-    iconGL.width = 16;
-    iconGL.height = 16;
-    iconGL.className = "vscode-icon";
-    btnGL.appendChild(iconGL);
-
     btnGL.addEventListener("click", () => {
-      const branch =
-        document.getElementById("gitlab-branch-select")?.value ||
-        getCurrentBranch();
-
+      const branch = getCurrentBranch();
       window.open(buildGitlabUrl(siteKey, branch), "_blank");
     });
 
+    btnVS.appendChild(iconVS);
+    btnGL.appendChild(iconGL);
     bar.appendChild(btnVS);
     bar.appendChild(btnGL);
     cardEl.appendChild(bar);
-  }
-
-  function baseBtnStyle() {
-    return `
-      display:inline-flex;align-items:center;border:none;gap:6px;color:#fff;
-      background:transparent;font-weight:600;border-radius:6px;padding:6px 0;
-      cursor:pointer;
-    `;
   }
 
   function enhanceAllCards() {
     document.querySelectorAll(".card").forEach(enhanceCard);
   }
 
-  //  => pour un futur ajout de fonction de recherche
-  // function observeCards() {
-  //   new MutationObserver((muts) => {
-  //     muts.forEach((m) => {
-  //       m.addedNodes.forEach((n) => {
-  //         if (!(n instanceof Element)) return;
-  //         if (n.matches(".card")) enhanceCard(n);
-  //         else n.querySelectorAll?.(".card").forEach(enhanceCard);
-  //       });
-  //     });
-  //   }).observe(document.body, { childList: true, subtree: true });
-  // }
+  let __inited = false;
 
-  ensureStyles();
-  ensureGlobalSelector();
-  enhanceAllCards();
-  ensureSettings();
-  // observeCards();
+  function globalInit() {
+    if (__inited) return;
+    __inited = true;
+
+    ensureStyles();
+    ensureGlobalSelector();
+    enhanceAllCards();
+    ensureSettings();
+  }
+
+  globalInit();
 })();
