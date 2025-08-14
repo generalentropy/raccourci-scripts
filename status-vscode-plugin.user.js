@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.2.6
+// @version      1.2.7
 // @description  Ouvre un projet dans VS Code ou gitlab + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -326,6 +326,8 @@ td.site_key .rc-cellwrap > a {
 
 #rc-settings-panel input[type="checkbox"] {
   accent-color: var(--rc-accent);
+  margin-right: 8px;
+
 }
 #rc-settings-panel input[type="checkbox"]:checked {
   background-color: var(--rc-accent);
@@ -341,6 +343,11 @@ hr {
 
 td {
     padding: var(--rc-td-padding);
+}
+
+#rc-icon-opacity-value {
+font-weight:bold;
+color: rgba(255, 171, 213, 1);
 }
 
 `;
@@ -373,20 +380,18 @@ td {
     panel.innerHTML = `
       <div class="row" style="justify-content:space-between;margin-bottom:8px;">
         <strong>Réglages</strong>
-
-
-        <button type="button" id="rc-close" style="background:transparent;border:none;color:rgb(247, 109, 143);font-size:16px;line-height:1;cursor:pointer">×</button>
+       <button type="button" id="rc-close" style="background:transparent;border:none;color:rgba(255, 171, 213, 1);font-size:16px;line-height:1;cursor:pointer">×</button>
       </div>
        <hr />
 
       <div class="flex" style="margin-top:6px;">
-        <label><input type="checkbox" id="rc-wrap-sitekey">Afficher l'intégralité des sitekey longs</label>
+        <label><input type="checkbox" id="rc-wrap-sitekey">Ne pas tronquer les sitekey longs</label>
         <label><input type="checkbox" id="rc-show-dev">Afficher l'icone de lien vers le dev</label>
         <label><input type="checkbox" id="rc-show-vs">Afficher VS Code</label>
         <label><input type="checkbox" id="rc-show-gl">Afficher GitLab</label>
       </div>
 
-      <div style="margin:10px 0;">
+      <div style="margin:15px 0;">
         <div class="row" style="justify-content:space-between;">
           <span>Opacité des icônes</span><span id="rc-icon-opacity-value">100%</span>
         </div>
