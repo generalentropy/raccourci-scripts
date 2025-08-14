@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         Status projects shortcuts
+// @name         Woody status supercharged 🚀
 // @namespace    http://tampermonkey.net/
-// @version      1.2.8
+// @version      1.2.9
 // @description  Ouvre un projet dans VS Code ou gitlab + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
-// @icon         https://code.visualstudio.com/favicon.ico
+// @icon         https://i.imgur.com/6k2zyk2.png
 // @grant        none
 // @homepageURL  https://github.com/generalentropy/raccourci-scripts
 // @updateURL    https://raw.githubusercontent.com/generalentropy/raccourci-scripts/main/status-vscode-plugin.user.js
