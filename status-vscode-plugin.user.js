@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Status projects shortcuts
 // @namespace    http://tampermonkey.net/
-// @version      1.2.2
+// @version      1.2.3
 // @description  Ouvre un projet dans VS Code ou gitlab + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -42,6 +42,12 @@
   const URL_MODIFIER = [
     { initial: "labauleguerande", updated: "labaule" },
     { initial: "perchesarthois", updated: "perche-sarthois" },
+    { initial: "ifpm-orleans", updated: "ifpm45" },
+    {
+      initial: "staderochelais ",
+      updated: "intranet.staderochelais",
+      shortUrl: true,
+    },
   ];
 
   const getHost = () => localStorage.getItem(STORAGE_HOST) || HOST_ALIASES[0];
@@ -566,7 +572,9 @@ td {
     // check si le l'URL est différente du sitekey affiché
     const match = URL_MODIFIER.find((s) => s.initial.trim() === siteKey.trim());
     const updated = (match?.updated || siteKey).trim();
-    return `http://www.${encodeURIComponent(updated)}.wp.rc-dev.com`;
+    const www = match?.shortUrl ? "" : "www.";
+
+    return `http://${www}${encodeURIComponent(updated)}.wp.rc-dev.com`;
   }
 
   function enhanceCard(cardEl) {
