@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Woody Status Supercharged 🚀
 // @namespace    http://tampermonkey.net/
-// @version      1.2.13
+// @version      1.2.14
 // @description  Ouvre un projet dans VS Code ou gitlab (selecteur de branche) + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -49,6 +49,14 @@
       shortUrl: true,
     },
   ];
+
+  const ICONS = {
+    vscode: "https://code.visualstudio.com/favicon.ico",
+    gitlab: "https://i.imgur.com/BcoMk3p.png",
+    dev: "https://i.imgur.com/lLwS7mg.png",
+    cog: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>`,
+    close: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`,
+  };
 
   const getHost = () => localStorage.getItem(STORAGE_HOST) || HOST_ALIASES[0];
   const setHost = (host) => {
@@ -244,7 +252,7 @@ td.site_key .rc-cellwrap > a {
   display: block;
 }
 
-/* Panel  */
+/* -------- Panel --------  */
 #rc-settings-panel {
   position: fixed;
   bottom: 70px;
@@ -262,7 +270,7 @@ td.site_key .rc-cellwrap > a {
   isolation: isolate;
 }
 
-/* Bordure tournante  */
+/* -------- Bordure --------  */
 #rc-settings-panel::before {
   content: "";
   position: absolute;
@@ -291,7 +299,6 @@ td.site_key .rc-cellwrap > a {
   mask-composite: exclude;
 }
 
-/* Le contenu du panel passe au-dessus de la bordure */
 #rc-settings-panel > * {
   position: relative;
   z-index: 1;
@@ -426,14 +433,14 @@ td {
     const btn = document.createElement("button");
     btn.id = "rc-settings-btn";
     btn.type = "button";
-    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>`;
+    btn.innerHTML = ICONS.cog;
 
     const panel = document.createElement("div");
     panel.id = "rc-settings-panel";
     panel.innerHTML = `
       <div class="row" style="justify-content:space-between;margin-bottom:8px;">
         <strong>Réglages</strong>
-       <button type="button" id="rc-close" style="background:transparent;border:none;color:white;font-size:16px;line-height:1;cursor:pointer;opacity:0.8"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></button>
+       <button type="button" id="rc-close" style="background:transparent;border:none;color:white;font-size:16px;line-height:1;cursor:pointer;opacity:0.8">${ICONS.close}</button>
       </div>
        <hr />
 
@@ -581,7 +588,7 @@ td {
     const rowHost = document.createElement("div");
     rowHost.className = "row";
     const iconVS = document.createElement("img");
-    iconVS.src = "https://code.visualstudio.com/favicon.ico";
+    iconVS.src = ICONS.vscode;
     iconVS.alt = "VS Code";
     iconVS.width = 16;
     iconVS.height = 16;
@@ -605,7 +612,7 @@ td {
     const rowBranch = document.createElement("div");
     rowBranch.className = "row";
     const iconGL = document.createElement("img");
-    iconGL.src = "https://i.imgur.com/BcoMk3p.png";
+    iconGL.src = ICONS.gitlab;
     iconGL.alt = "GitLab";
     iconGL.width = 16;
     iconGL.height = 16;
@@ -693,7 +700,7 @@ td {
     const btnDev = createBtn(
       "rc-btn--dev",
       "Ouvrir la version de dev",
-      "https://i.imgur.com/lLwS7mg.png",
+      ICONS.dev,
       () => {
         const url = buildDevUrl(siteKey);
         if (url) window.open(url, "_blank");
@@ -703,7 +710,7 @@ td {
     const btnVS = createBtn(
       "rc-btn--vs",
       "Ouvrir dans VS Code",
-      "https://code.visualstudio.com/favicon.ico",
+      ICONS.vscode,
       () => {
         const host = getHost();
         const abs = `/home/admin/www/themes/${siteKey}/current`;
@@ -716,7 +723,7 @@ td {
     const btnGL = createBtn(
       "rc-btn--gl",
       "Ouvrir sur GitLab",
-      "https://i.imgur.com/BcoMk3p.png",
+      ICONS.gitlab,
       () => {
         const branch = getBranch();
         window.open(buildGitlabUrl(siteKey, branch), "_blank");
