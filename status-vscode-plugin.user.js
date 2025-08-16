@@ -727,11 +727,9 @@ td {
       }
     );
 
-    inline.appendChild(btnDev);
-    inline.appendChild(btnVS);
-    inline.appendChild(btnGL);
-
+    inline.append(btnDev, btnVS, btnGL);
     wrap.appendChild(inline);
+
     cellEl.setAttribute("data-vscode-ui", "true");
   }
 
