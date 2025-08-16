@@ -37,7 +37,10 @@
     showGL: "rc_settings_show_gitlab",
   };
 
-  const SITEKEY_UPDATE = [{ initial: "", updated: "" }];
+  // Mapping optionnel si le siteKey affiché != nom du projet
+  const SITEKEY_UPDATE = [
+    // { initial: "ancien_nom", updated: "nouveau_nom" }
+  ];
   const GITLAB_V2 = ["marseille-tourisme", "ot-verbier", "broceliande"];
   const URL_MODIFIER = [
     { initial: "labauleguerande", updated: "labaule" },
@@ -389,7 +392,7 @@ td.site_key .rc-cellwrap > a {
   border-color: var(--rc-accent);
 }
 
-hr {
+#rc-settings-panel hr {
   border: none;
   border-top: 1px dashed var(--rc-accent);
   opacity: 0.5;
@@ -411,7 +414,7 @@ td {
 
 
 `;
-    document.head.appendChild(style);
+    document.head.append(style);
   }
 
   function updateTdPadding() {
@@ -463,8 +466,7 @@ td {
       </div>
     `;
 
-    document.body.appendChild(btn);
-    document.body.appendChild(panel);
+    document.body.append(btn, panel);
 
     const wrapCbx = panel.querySelector("#rc-wrap-sitekey");
     const devCbx = panel.querySelector("#rc-show-dev");
@@ -605,9 +607,7 @@ td {
       selectHost.appendChild(opt);
     });
     selectHost.addEventListener("change", () => setHost(selectHost.value));
-    rowHost.appendChild(iconVS);
-    rowHost.appendChild(labelHost);
-    rowHost.appendChild(selectHost);
+    rowHost.append(iconVS, labelHost, selectHost);
 
     const rowBranch = document.createElement("div");
     rowBranch.className = "row";
@@ -631,13 +631,10 @@ td {
     selectBranch.addEventListener("change", () =>
       setBranch(selectBranch.value)
     );
-    rowBranch.appendChild(iconGL);
-    rowBranch.appendChild(labelBranch);
-    rowBranch.appendChild(selectBranch);
 
-    wrap.appendChild(rowHost);
-    wrap.appendChild(rowBranch);
-    document.body.appendChild(wrap);
+    rowBranch.append(iconGL, labelBranch, selectBranch);
+    wrap.append(rowHost, rowBranch);
+    document.body.append(wrap);
 
     setHost(currHost);
     setBranch(currBranch);
@@ -670,7 +667,7 @@ td {
     if (!raw) return;
 
     // check si le sitekey affiché diffère du folder du projet
-    const mapped = SITEKEY_UPDATE.find((s) => s.initial === raw);
+    const mapped = SITEKEY_UPDATE.find((s) => s.initial.trim() === raw.trim());
     const siteKey = (mapped ? mapped.updated : raw).trim();
 
     let wrap = cellEl.querySelector(".rc-cellwrap");
@@ -733,6 +730,7 @@ td {
     inline.appendChild(btnDev);
     inline.appendChild(btnVS);
     inline.appendChild(btnGL);
+
     wrap.appendChild(inline);
     cellEl.setAttribute("data-vscode-ui", "true");
   }
