@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Woody Status Supercharged 🚀
 // @namespace    https://github.com/generalentropy/raccourci-scripts
-// @version      1.2.15
+// @version      1.2.16
 // @description  Ouvre un projet dans VS Code ou gitlab (selecteur de branche) + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -27,6 +27,8 @@
   const BRANCHES = ["master", "develop"];
   const STORAGE_HOST = "vscode_global_host_alias";
   const STORAGE_BRANCH = "gitlab_branch";
+
+  // Clé pour les valeurs stockées en localStorage
   const SETTINGS = {
     row: "rc_settings_row_mode",
     opacity: "rc_settings_icon_opacity_pct",
@@ -424,6 +426,7 @@ td {
     const showVS = localStorage.getItem(SETTINGS.showVS) !== "false";
     const showGL = localStorage.getItem(SETTINGS.showGL) !== "false";
 
+    // Si aucune icone affichée on remet le padding pour éviter que tous les éléments soient collés
     const allHidden = !showDev && !showVS && !showGL;
     document.documentElement.style.setProperty(
       "--rc-td-padding",
