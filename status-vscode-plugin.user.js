@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Woody Status Supercharged 🚀
 // @namespace    https://github.com/generalentropy/raccourci-scripts
-// @version      1.2.17
+// @version      1.2.18
 // @description  Ouvre un projet dans VS Code ou gitlab (selecteur de branche) + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -23,6 +23,7 @@
     "celia.wp.rc.dev",
     "marion.wp.rc.dev",
     "sebastien.wp.rc.dev",
+    "sereta.wp.rc.dev",
   ];
   const BRANCHES = ["master", "develop"];
   const STORAGE_HOST = "vscode_global_host_alias";
