@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Woody Status Supercharged 🚀
 // @namespace    https://github.com/generalentropy/raccourci-scripts
-// @version      1.2.16
+// @version      1.2.17
 // @description  Ouvre un projet dans VS Code ou gitlab (selecteur de branche) + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -769,41 +769,45 @@ td {
   function initNekoListeners() {
     let wasRunning = false;
 
-    // Pause/reprise quand l’onglet est caché
     document.addEventListener("visibilitychange", () => {
       if (!neko) return;
       if (document.hidden) {
         wasRunning = neko.running;
         if (neko.running) neko.stop();
-      } else {
-        if (wasRunning) neko.start();
+      } else if (wasRunning) {
+        neko.start();
       }
     });
 
-    // Raccourcis
     document.addEventListener("keydown", (e) => {
-      const target = e.target;
-      const isTyping =
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable);
-      if (isTyping) return;
+      if (e.isComposing) return;
 
-      const isMod = e.ctrlKey || e.metaKey;
-
-      // Start/Stop — Ctrl/⌘ + Alt + N
-      if (isMod && e.altKey && e.key.toLowerCase() === "n" && !e.shiftKey) {
-        e.preventDefault();
-        if (!neko) neko = oneko({ speed: 180 }); // (re)crée si absent
-        neko.running ? neko.stop() : neko.start();
+      const t = e.target;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable)
+      ) {
+        return;
       }
 
-      // Destroy — Ctrl/⌘ + Alt + Shift + N
-      if (isMod && e.altKey && e.shiftKey && e.key.toLowerCase() === "n") {
+      const isMod = e.metaKey || e.ctrlKey;
+
+      // Start/Stop — Cmd/Ctrl + Shift + K
+      if (isMod && e.shiftKey && e.code === "KeyK") {
+        e.preventDefault();
+        if (!neko) neko = oneko({ speed: 180 });
+        neko.running ? neko.stop() : neko.start();
+        return;
+      }
+
+      // Destroy — Cmd/Ctrl + Shift + X
+      if (isMod && e.shiftKey && e.code === "KeyX") {
         e.preventDefault();
         if (neko) neko.destroy();
-        neko = null; // permet une relance ultérieure
+        neko = null;
+        return;
       }
     });
   }
