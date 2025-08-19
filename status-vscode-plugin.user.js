@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Woody Status Supercharged 🚀
-// @namespace    http://tampermonkey.net/
-// @version      1.2.14
+// @namespace    https://github.com/generalentropy/raccourci-scripts
+// @version      1.2.16
 // @description  Ouvre un projet dans VS Code ou gitlab (selecteur de branche) + site de dev
 // @author       Eddy Nicolle
 // @match        https://status.woody-wp.com/
@@ -27,6 +27,8 @@
   const BRANCHES = ["master", "develop"];
   const STORAGE_HOST = "vscode_global_host_alias";
   const STORAGE_BRANCH = "gitlab_branch";
+
+  // Clé pour les valeurs stockées en localStorage
   const SETTINGS = {
     row: "rc_settings_row_mode",
     opacity: "rc_settings_icon_opacity_pct",
@@ -37,7 +39,10 @@
     showGL: "rc_settings_show_gitlab",
   };
 
-  const SITEKEY_UPDATE = [{ initial: "", updated: "" }];
+  // Mapping optionnel si le siteKey affiché != nom du projet
+  const SITEKEY_UPDATE = [
+    // { initial: "ancien_nom", updated: "nouveau_nom" }
+  ];
   const GITLAB_V2 = ["marseille-tourisme", "ot-verbier", "broceliande"];
   const URL_MODIFIER = [
     { initial: "labauleguerande", updated: "labaule" },
@@ -69,6 +74,8 @@
     localStorage.setItem(STORAGE_BRANCH, branch);
     document.documentElement.setAttribute("data-gitlab-branch", branch);
   };
+
+  let neko = null;
 
   function ensureStyles() {
     if (document.getElementById("vscode-userscript-style")) return;
@@ -389,7 +396,7 @@ td.site_key .rc-cellwrap > a {
   border-color: var(--rc-accent);
 }
 
-hr {
+#rc-settings-panel hr {
   border: none;
   border-top: 1px dashed var(--rc-accent);
   opacity: 0.5;
@@ -411,7 +418,7 @@ td {
 
 
 `;
-    document.head.appendChild(style);
+    document.head.append(style);
   }
 
   function updateTdPadding() {
@@ -419,6 +426,7 @@ td {
     const showVS = localStorage.getItem(SETTINGS.showVS) !== "false";
     const showGL = localStorage.getItem(SETTINGS.showGL) !== "false";
 
+    // Si aucune icone affichée on remet le padding pour éviter que tous les éléments soient collés
     const allHidden = !showDev && !showVS && !showGL;
     document.documentElement.style.setProperty(
       "--rc-td-padding",
@@ -463,8 +471,7 @@ td {
       </div>
     `;
 
-    document.body.appendChild(btn);
-    document.body.appendChild(panel);
+    document.body.append(btn, panel);
 
     const wrapCbx = panel.querySelector("#rc-wrap-sitekey");
     const devCbx = panel.querySelector("#rc-show-dev");
@@ -605,9 +612,7 @@ td {
       selectHost.appendChild(opt);
     });
     selectHost.addEventListener("change", () => setHost(selectHost.value));
-    rowHost.appendChild(iconVS);
-    rowHost.appendChild(labelHost);
-    rowHost.appendChild(selectHost);
+    rowHost.append(iconVS, labelHost, selectHost);
 
     const rowBranch = document.createElement("div");
     rowBranch.className = "row";
@@ -631,13 +636,10 @@ td {
     selectBranch.addEventListener("change", () =>
       setBranch(selectBranch.value)
     );
-    rowBranch.appendChild(iconGL);
-    rowBranch.appendChild(labelBranch);
-    rowBranch.appendChild(selectBranch);
 
-    wrap.appendChild(rowHost);
-    wrap.appendChild(rowBranch);
-    document.body.appendChild(wrap);
+    rowBranch.append(iconGL, labelBranch, selectBranch);
+    wrap.append(rowHost, rowBranch);
+    document.body.append(wrap);
 
     setHost(currHost);
     setBranch(currBranch);
@@ -670,7 +672,7 @@ td {
     if (!raw) return;
 
     // check si le sitekey affiché diffère du folder du projet
-    const mapped = SITEKEY_UPDATE.find((s) => s.initial === raw);
+    const mapped = SITEKEY_UPDATE.find((s) => s.initial.trim() === raw.trim());
     const siteKey = (mapped ? mapped.updated : raw).trim();
 
     let wrap = cellEl.querySelector(".rc-cellwrap");
@@ -730,10 +732,9 @@ td {
       }
     );
 
-    inline.appendChild(btnDev);
-    inline.appendChild(btnVS);
-    inline.appendChild(btnGL);
+    inline.append(btnDev, btnVS, btnGL);
     wrap.appendChild(inline);
+
     cellEl.setAttribute("data-vscode-ui", "true");
   }
 
@@ -765,8 +766,317 @@ td {
     );
   }
 
-  let __inited = false;
+  function initNekoListeners() {
+    let wasRunning = false;
 
+    // Pause/reprise quand l’onglet est caché
+    document.addEventListener("visibilitychange", () => {
+      if (!neko) return;
+      if (document.hidden) {
+        wasRunning = neko.running;
+        if (neko.running) neko.stop();
+      } else {
+        if (wasRunning) neko.start();
+      }
+    });
+
+    // Raccourcis
+    document.addEventListener("keydown", (e) => {
+      const target = e.target;
+      const isTyping =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (isTyping) return;
+
+      const isMod = e.ctrlKey || e.metaKey;
+
+      // Start/Stop — Ctrl/⌘ + Alt + N
+      if (isMod && e.altKey && e.key.toLowerCase() === "n" && !e.shiftKey) {
+        e.preventDefault();
+        if (!neko) neko = oneko({ speed: 180 }); // (re)crée si absent
+        neko.running ? neko.stop() : neko.start();
+      }
+
+      // Destroy — Ctrl/⌘ + Alt + Shift + N
+      if (isMod && e.altKey && e.shiftKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        if (neko) neko.destroy();
+        neko = null; // permet une relance ultérieure
+      }
+    });
+  }
+
+  function oneko(userOpts = {}) {
+    const opts = {
+      size: 32,
+      speed: 160,
+      spriteFps: 10,
+      spriteUrl: "https://i.imgur.com/7yUmQyf.gif",
+      zIndex: 2147483647,
+      root: document.body,
+      ...userOpts,
+    };
+
+    let el = null,
+      onMouseMove,
+      onResize;
+    let running = false;
+    let raf = null;
+    let pos, mouse, lastTs, spriteAcc, idleMs, idleAnim, idleFrame, moveFrame;
+
+    // --- spritesheet ---
+    const sprites = {
+      idle: [[-3, -3]],
+      alert: [[-7, -3]],
+      scratchSelf: [
+        [-5, 0],
+        [-6, 0],
+        [-7, 0],
+      ],
+      scratchWallN: [
+        [0, 0],
+        [0, -1],
+      ],
+      scratchWallS: [
+        [-7, -1],
+        [-6, -2],
+      ],
+      scratchWallE: [
+        [-2, -2],
+        [-2, -3],
+      ],
+      scratchWallW: [
+        [-4, 0],
+        [-4, -1],
+      ],
+      tired: [[-3, -2]],
+      sleeping: [
+        [-2, 0],
+        [-2, -1],
+      ],
+      N: [
+        [-1, -2],
+        [-1, -3],
+      ],
+      NE: [
+        [0, -2],
+        [0, -3],
+      ],
+      E: [
+        [-3, 0],
+        [-3, -1],
+      ],
+      SE: [
+        [-5, -1],
+        [-5, -2],
+      ],
+      S: [
+        [-6, -3],
+        [-7, -2],
+      ],
+      SW: [
+        [-5, -3],
+        [-6, -1],
+      ],
+      W: [
+        [-4, -2],
+        [-4, -3],
+      ],
+      NW: [
+        [-1, 0],
+        [-1, -1],
+      ],
+    };
+
+    // --- timing partagé ---
+    const spriteDt = 1000 / Math.max(1, opts.spriteFps); // ms/frame
+
+    // --- utils ---
+    const setSprite = (name, frame) => {
+      if (!el) return;
+      const seq = sprites[name];
+      const [sx, sy] = seq[frame % seq.length];
+      el.style.backgroundPosition = `${sx * opts.size}px ${sy * opts.size}px`;
+    };
+
+    const clamp = () => {
+      const { clientWidth: w, clientHeight: h } = document.documentElement;
+      const m = 16;
+      pos.x = Math.min(Math.max(m, pos.x), w - m);
+      pos.y = Math.min(Math.max(m, pos.y), h - m);
+    };
+
+    const resetIdle = () => {
+      idleAnim = null;
+      idleFrame = 0;
+    };
+
+    const runIdle = (advance) => {
+      if (idleMs > 1000 && !idleAnim && Math.floor(Math.random() * 200) === 0) {
+        const choices = ["sleeping", "scratchSelf"];
+        const m = opts.size;
+        const { innerWidth: w, innerHeight: h } = window;
+        if (pos.x < m) choices.push("scratchWallW");
+        if (pos.y < m) choices.push("scratchWallN");
+        if (pos.x > w - m) choices.push("scratchWallE");
+        if (pos.y > h - m) choices.push("scratchWallS");
+        idleAnim = choices[Math.floor(Math.random() * choices.length)];
+      }
+      if (!idleAnim) {
+        setSprite("idle", 0);
+        return;
+      }
+      switch (idleAnim) {
+        case "sleeping":
+          if (idleFrame < 8) setSprite("tired", 0);
+          else setSprite("sleeping", Math.floor(idleFrame / 4));
+          if (idleFrame > 192) resetIdle();
+          break;
+        case "scratchWallN":
+        case "scratchWallS":
+        case "scratchWallE":
+        case "scratchWallW":
+        case "scratchSelf":
+          setSprite(idleAnim, idleFrame);
+          if (idleFrame > 9) resetIdle();
+          break;
+      }
+      if (advance) idleFrame++;
+    };
+
+    const directionToSprite = (dx, dy, dist) => {
+      let dir = "";
+      const nx = dx / dist,
+        ny = dy / dist;
+      if (ny > 0.5) dir = "N";
+      else if (ny < -0.5) dir = "S";
+      if (nx > 0.5) dir += "W";
+      else if (nx < -0.5) dir += "E";
+      return dir || "idle";
+    };
+
+    // --- loop ---
+    const step = (ts) => {
+      if (!running) return;
+      const dt = Math.min(0.05, (ts - lastTs) / 1000);
+      const dtMs = dt * 1000;
+      lastTs = ts;
+      spriteAcc += dtMs;
+
+      const dx = pos.x - mouse.x,
+        dy = pos.y - mouse.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < opts.speed * dt || dist < opts.size * 1.5) {
+        idleMs += dtMs;
+        const advance = spriteAcc >= spriteDt;
+        runIdle(advance);
+        if (advance) spriteAcc %= spriteDt;
+        raf = requestAnimationFrame(step);
+        return;
+      }
+
+      idleMs = 0;
+      resetIdle();
+
+      if (spriteAcc >= spriteDt) {
+        const dir = directionToSprite(dx, dy, dist);
+        moveFrame++;
+        setSprite(dir, moveFrame);
+        spriteAcc %= spriteDt;
+      }
+
+      const stepLen = Math.min(dist, opts.speed * dt);
+      pos.x -= (dx / dist) * stepLen;
+      pos.y -= (dy / dist) * stepLen;
+      clamp();
+      el.style.transform = `translate(${pos.x - opts.size / 2}px, ${
+        pos.y - opts.size / 2
+      }px)`;
+
+      raf = requestAnimationFrame(step);
+    };
+
+    // --- API ---
+    const start = () => {
+      if (running) return;
+
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "oneko";
+        el.setAttribute("aria-hidden", "true");
+        Object.assign(el.style, {
+          position: "fixed",
+          width: `${opts.size}px`,
+          height: `${opts.size}px`,
+          left: "0px",
+          top: "0px",
+          pointerEvents: "none",
+          backgroundImage: `url('${opts.spriteUrl}')`,
+          backgroundRepeat: "no-repeat",
+          imageRendering: "pixelated",
+          willChange: "transform, background-position",
+          zIndex: String(opts.zIndex),
+        });
+        opts.root.appendChild(el);
+
+        pos = { x: 32, y: 32 };
+        mouse = { x: pos.x, y: pos.y };
+
+        // listeners référencés
+        onMouseMove = (e) => {
+          mouse.x = e.clientX;
+          mouse.y = e.clientY - opts.size / 2;
+        };
+        onResize = clamp;
+
+        window.addEventListener("mousemove", onMouseMove, { passive: true });
+        window.addEventListener("resize", onResize, { passive: true });
+      }
+
+      spriteAcc = 0;
+      idleMs = 0;
+      idleAnim = null;
+      idleFrame = 0;
+      moveFrame = 0;
+      lastTs = performance.now();
+      running = true;
+      raf = requestAnimationFrame(step);
+    };
+
+    const stop = () => {
+      if (!running) return;
+      running = false;
+      cancelAnimationFrame(raf);
+      raf = null;
+    };
+
+    const destroy = () => {
+      stop();
+      //  nettoyage des listeners
+      if (onMouseMove) window.removeEventListener("mousemove", onMouseMove);
+      if (onResize) window.removeEventListener("resize", onResize);
+      if (el) {
+        el.remove();
+        el = null;
+      }
+      onMouseMove = null;
+      onResize = null;
+    };
+
+    return {
+      start,
+      stop,
+      destroy,
+      get running() {
+        return running;
+      },
+    };
+  }
+
+  let __inited = false;
   function init() {
     if (__inited) return;
     __inited = true;
@@ -776,6 +1086,7 @@ td {
     applyInitialFlagsFromStorage();
     enhanceAllCards();
     ensureSettings();
+    initNekoListeners();
   }
 
   init();
